@@ -1,0 +1,200 @@
+package com.smartcampus.erp.service.impl;
+
+import com.smartcampus.erp.dto.*;
+import com.smartcampus.erp.entity.*;
+import com.smartcampus.erp.exception.BadRequestException;
+import com.smartcampus.erp.exception.ResourceNotFoundException;
+import com.smartcampus.erp.exception.UnauthorizedException;
+import com.smartcampus.erp.repository.*;
+import com.smartcampus.erp.service.AssignmentService;
+import com.smartcampus.erp.service.FileStorageService;
+import com.smartcampus.erp.service.NotificationService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class AssignmentServiceImpl implements AssignmentService {
+
+    private final AssignmentRepository assignmentRepository;
+    private final AssignmentSubmissionRepository submissionRepository;
+    private final CourseRepository courseRepository;
+    private final StudentProfileRepository studentProfileRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
+
+    public AssignmentServiceImpl(AssignmentRepository assignmentRepository,
+                                 AssignmentSubmissionRepository submissionRepository,
+                                 CourseRepository courseRepository,
+                                 StudentProfileRepository studentProfileRepository,
+                                 EnrollmentRepository enrollmentRepository,
+                                 FileStorageService fileStorageService,
+                                 NotificationService notificationService) {
+        this.assignmentRepository = assignmentRepository;
+        this.submissionRepository = submissionRepository;
+        this.courseRepository = courseRepository;
+        this.studentProfileRepository = studentProfileRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.fileStorageService = fileStorageService;
+        this.notificationService = notificationService;
+    }
+
+    @Override
+    @Transactional
+    public AssignmentResponse createAssignment(Long facultyUserId, AssignmentRequest request) {
+        Course course = courseRepository.findById(request.getCourseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found for ID: " + request.getCourseId()));
+
+        if (course.getFaculty() == null || !course.getFaculty().getId().equals(facultyUserId)) {
+            throw new UnauthorizedException("Faculty is not authorized to create assignments for this course");
+        }
+
+        Assignment assignment = Assignment.builder()
+                .course(course)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .dueDate(request.getDueDate())
+                .maxMarks(request.getMaxMarks())
+                .build();
+
+        Assignment saved = assignmentRepository.save(assignment);
+        return mapToAssignmentResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AssignmentResponse> getCourseAssignments(Long courseId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new ResourceNotFoundException("Course not found for ID: " + courseId);
+        }
+        return assignmentRepository.findByCourseId(courseId).stream()
+                .map(this::mapToAssignmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public SubmissionResponse submitAssignment(Long studentUserId, Long assignmentId, MultipartFile file) {
+        StudentProfile student = studentProfileRepository.findById(studentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
+
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment not found for ID: " + assignmentId));
+
+        // Validate student enrollment
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(studentUserId, assignment.getCourse().getId())
+                .orElseThrow(() -> new BadRequestException("Student is not enrolled in the course for this assignment"));
+
+        if (enrollment.getStatus() != EnrollmentStatus.ACTIVE) {
+            throw new BadRequestException("Student enrollment is not active");
+        }
+
+        // Upload and store the file
+        String uniqueFileName = fileStorageService.storeFile(file);
+
+        Optional<AssignmentSubmission> existingOpt = submissionRepository.findByAssignmentIdAndStudentId(assignmentId, studentUserId);
+
+        AssignmentSubmission submission;
+        if (existingOpt.isPresent()) {
+            submission = existingOpt.get();
+            submission.setFileUrl(uniqueFileName);
+            submission.setSubmittedAt(LocalDateTime.now());
+        } else {
+            submission = AssignmentSubmission.builder()
+                    .assignment(assignment)
+                    .student(student)
+                    .fileUrl(uniqueFileName)
+                    .submittedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        AssignmentSubmission saved = submissionRepository.save(submission);
+        return mapToSubmissionResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public SubmissionResponse gradeSubmission(Long facultyUserId, Long submissionId, GradeSubmissionRequest request) {
+        AssignmentSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found for ID: " + submissionId));
+
+        Assignment assignment = submission.getAssignment();
+        Course course = assignment.getCourse();
+
+        if (course.getFaculty() == null || !course.getFaculty().getId().equals(facultyUserId)) {
+            throw new UnauthorizedException("Faculty is not authorized to grade this submission");
+        }
+
+        if (request.getMarksObtained() > assignment.getMaxMarks()) {
+            throw new BadRequestException("Marks obtained cannot exceed maximum assignment marks of: " + assignment.getMaxMarks());
+        }
+
+        submission.setMarksObtained(request.getMarksObtained());
+        AssignmentSubmission saved = submissionRepository.save(submission);
+
+        // Notify student
+        String msg = String.format("Your submission for %s has been graded: %.2f / %.2f.",
+                assignment.getTitle(), request.getMarksObtained(), assignment.getMaxMarks());
+        notificationService.createNotification(submission.getStudent().getId(), "Assignment Graded", msg);
+
+        return mapToSubmissionResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SubmissionResponse> getAssignmentSubmissions(Long facultyUserId, Long assignmentId) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment not found for ID: " + assignmentId));
+
+        Course course = assignment.getCourse();
+        if (course.getFaculty() == null || !course.getFaculty().getId().equals(facultyUserId)) {
+            throw new UnauthorizedException("Faculty is not authorized to view submissions for this assignment");
+        }
+
+        return submissionRepository.findByAssignmentId(assignmentId).stream()
+                .map(this::mapToSubmissionResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SubmissionResponse> getStudentSubmissions(Long studentUserId) {
+        if (!studentProfileRepository.existsById(studentUserId)) {
+            throw new ResourceNotFoundException("Student profile not found for ID: " + studentUserId);
+        }
+        return submissionRepository.findByStudentId(studentUserId).stream()
+                .map(this::mapToSubmissionResponse)
+                .collect(Collectors.toList());
+    }
+
+    private AssignmentResponse mapToAssignmentResponse(Assignment assignment) {
+        return AssignmentResponse.builder()
+                .id(assignment.getId())
+                .courseId(assignment.getCourse().getId())
+                .courseTitle(assignment.getCourse().getTitle())
+                .title(assignment.getTitle())
+                .description(assignment.getDescription())
+                .dueDate(assignment.getDueDate())
+                .maxMarks(assignment.getMaxMarks())
+                .build();
+    }
+
+    private SubmissionResponse mapToSubmissionResponse(AssignmentSubmission submission) {
+        return SubmissionResponse.builder()
+                .id(submission.getId())
+                .assignmentId(submission.getAssignment().getId())
+                .assignmentTitle(submission.getAssignment().getTitle())
+                .studentId(submission.getStudent().getId())
+                .studentName(submission.getStudent().getUser().getName())
+                .fileUrl(submission.getFileUrl())
+                .submittedAt(submission.getSubmittedAt())
+                .marksObtained(submission.getMarksObtained())
+                .build();
+    }
+}

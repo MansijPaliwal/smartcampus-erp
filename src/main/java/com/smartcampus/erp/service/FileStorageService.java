@@ -1,0 +1,7 @@
+package com.smartcampus.erp.service;
+
+import org.springframework.web.multipart.MultipartFile;
+
+public interface FileStorageService {
+    String storeFile(MultipartFile file);
+}
