@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCampus ERP — User Management</title>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" rel="stylesheet">
+  <!-- Core Design System -->
+  <link rel="stylesheet" href="/design-system.css?v=2">
+  <style>
+    /* Admin Layout Structure */
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-text-primary);
+    }
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      background-color: var(--color-bg);
+      color: var(--color-text-primary);
+    }
+    
+    /* Sidebar styling */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--color-sidebar-bg);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-header {
+      height: var(--topbar-height);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      overflow: hidden;
+      justify-content: space-between;
+    }
+    
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-lg);
+      white-space: nowrap;
+    }
+    .sidebar-logo .smart { font-weight: 400; color: var(--color-text-primary); }
+    .sidebar-logo .campus { font-weight: 600; color: var(--color-brand); }
+    .sidebar-logo .erp {
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    
+    .sidebar-menu {
+      list-style: none;
+      padding: var(--space-3) 0;
+      flex: 1;
+    }
+    .sidebar-item {
+      padding: 2px var(--space-3);
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-md);
+      color: var(--color-text-secondary);
+      font-weight: 500;
+      font-size: var(--text-sm);
+      text-decoration: none;
+      transition: all 150ms;
+      white-space: nowrap;
+    }
+    .sidebar-link:hover {
+      background-color: var(--color-surface);
+      color: var(--color-text-primary);
+      text-decoration: none;
+    }
+    .sidebar-link.active {
+      background-color: var(--color-sidebar-active);
+      color: var(--color-brand);
+    }
+    
+    /* Topbar styling */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background-color: var(--color-bg);
+      color: var(--color-text-primary);
+    }
+    
+    .topbar {
+      height: var(--topbar-height);
+      background-color: var(--color-topbar-bg);
+      border-bottom: 1px solid var(--color-topbar-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      flex-shrink: 0;
+    }
+    
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .menu-toggle {
+      background: none;
+      border: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .menu-toggle:hover {
+      background-color: var(--color-surface);
+    }
+    .topbar-title {
+      font-size: var(--text-lg);
+      font-weight: 500;
+    }
+    
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: var(--text-sm);
+      color: var(--color-text-inverse);
+      background-color: var(--color-brand);
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    /* Content Area */
+    .content-viewport {
+      padding: var(--space-6);
+      overflow-y: auto;
+      flex: 1;
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+    
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-6);
+    }
+    
+    /* Filters section */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+      background-color: var(--color-surface-raised);
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+    
+    /* Table Panel */
+    .table-container {
+      background-color: var(--color-surface-raised);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      overflow-x: auto;
+      position: relative;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    
+    th, td {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+    }
+    
+    th {
+      font-weight: 600;
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      user-select: none;
+    }
+    th:hover {
+      color: var(--color-text-primary);
+    }
+    
+    tr:hover {
+      background-color: var(--color-surface);
+    }
+    
+    /* Avatar Circle */
+    .avatar-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .name-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: var(--text-sm);
+      color: var(--color-text-inverse);
+    }
+    
+    /* Action button grid */
+    .actions-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-full);
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 150ms;
+    }
+    .action-btn:hover {
+      background-color: var(--color-border);
+      color: var(--color-text-primary);
+    }
+    
+    /* Pagination */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4);
+      border-top: 1px solid var(--color-border);
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+    }
+    .page-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .page-btn {
+      height: 32px;
+      min-width: 32px;
+      padding: 0 var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background-color: var(--color-surface-raised);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+    }
+    .page-btn.active {
+      background-color: var(--color-brand-light);
+      border-color: var(--color-brand);
+      color: var(--color-brand);
+    }
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* User Tabs inside Modal */
+    .type-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: var(--space-5);
+      gap: var(--space-2);
+    }
+    .type-tab {
+      flex: 1;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      border: 1px solid transparent;
+      border-bottom: none;
+      background: none;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+    .type-tab.active {
+      background-color: var(--color-brand-light);
+      border-color: var(--color-brand);
+      color: var(--color-brand);
+      font-weight: 600;
+    }
+    
+    .modal-section-title {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-brand);
+      margin-top: var(--space-4);
+      margin-bottom: var(--space-3);
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    /* Input status tick/cross wrapper */
+    .field-wrapper {
+      position: relative;
+    }
+    .field-status {
+      position: absolute;
+      right: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      pointer-events: none;
+      display: none;
+    }
+    
+    /* Sidebar collapsed status */
+    .sidebar.collapsed {
+      width: var(--sidebar-collapsed-width);
+    }
+    .sidebar.collapsed .sidebar-logo span:not(.campus), 
+    .sidebar.collapsed .sidebar-link span:not(.material-symbols-outlined) {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-logo {
+      padding: 0;
+      justify-content: center;
+      width: 100%;
+    }
+    .sidebar.collapsed .sidebar-logo .campus {
+      font-size: var(--text-xl);
+    }
+    
+    /* Shimmer Row */
+    .shimmer-row td div {
+      height: 18px;
+      border-radius: var(--radius-sm);
+    }
+    
+    /* Empty state */
+    .empty-state {
+      padding: 60px;
+      text-align: center;
+      display: none;
+    }
+    .empty-state svg {
+      width: 80px;
+      height: 80px;
+      fill: var(--color-text-disabled);
+      margin-bottom: var(--space-4);
+    }
+    
+    /* Profile details list */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+    .profile-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .profile-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+    .profile-value {
+      font-size: var(--text-sm);
+      color: var(--color-text-primary);
+      font-weight: 500;
+      word-break: break-all;
+    }
+    
+    /* Responsive details */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -256px;
+        top: 0;
+        bottom: 0;
+      }
+      .sidebar.mobile-open {
+        left: 0;
+      }
+      .main-content {
+        padding-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <div class="app-container">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span class="smart">Smart</span><span class="campus">Campus</span>
+          <span class="erp">ERP</span>
+        </div>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="sidebar-item">
+          <a href="/dashboard" class="sidebar-link">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="/admin/users" class="sidebar-link active">
+            <span class="material-symbols-outlined">group</span>
+            <span>User Management</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="/admin/settings" class="sidebar-link">
+            <span class="material-symbols-outlined">settings</span>
+            <span>Settings</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN BODY -->
+    <div class="main-content">
+      
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="btn-toggle-menu">
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+          <span class="topbar-title">User Management</span>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle-btn" id="theme-toggle">
+            <span class="material-symbols-outlined">dark_mode</span>
+          </button>
+          <div class="user-avatar" id="header-avatar" onclick="window.location.href='/admin/settings'">
+            AD
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT BODY -->
+      <main class="content-viewport" id="main-viewport">
+        
+        <div class="content-header">
+          <div>
+            <h1 class="text-2xl">User Management</h1>
+            <p class="text-sm text-secondary">Manage students, faculty, and administrators</p>
+          </div>
+          <button class="btn btn-primary" onclick="openCreateModal()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Create User</span>
+          </button>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <input type="text" id="search-input" class="form-control" style="width: 240px;" placeholder="Search name or email...">
+            
+            <select id="filter-role" class="form-control" style="width: 130px;">
+              <option value="ALL">All Roles</option>
+              <option value="STUDENT">Student</option>
+              <option value="FACULTY">Faculty</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            
+            <select id="filter-status" class="form-control" style="width: 130px;">
+              <option value="ALL">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+          <div class="text-sm text-secondary" id="results-count">
+            Showing 0 users
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-container">
+          <table id="users-table">
+            <thead>
+              <tr>
+                <th onclick="toggleSort('name')">User</th>
+                <th onclick="toggleSort('role')">Role</th>
+                <th>Contact / Details</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Content gets injected by JS -->
+            </tbody>
+          </table>
+
+          <!-- Empty State -->
+          <div class="empty-state" id="empty-box">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <h3 class="text-lg">No users found</h3>
+            <p class="text-sm text-secondary" style="margin-bottom: var(--space-4);">No matches match your criteria.</p>
+            <button class="btn btn-primary btn-sm" onclick="openCreateModal()">Create user</button>
+          </div>
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="pagination-bar">
+          <div id="pagination-info">Page 1 of 1</div>
+          <div class="page-controls">
+            <button class="page-btn" id="btn-page-prev" onclick="changePage(-1)">
+              <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span>
+            </button>
+            <div id="page-numbers" style="display:flex; gap:4px;"></div>
+            <button class="page-btn" id="btn-page-next" onclick="changePage(1)">
+              <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE USER -->
+  <div class="modal-backdrop" id="modal-create-backdrop">
+    <div class="modal" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 class="text-lg" id="create-modal-title">Create New User</h3>
+        <button class="action-btn" onclick="closeModal('modal-create-backdrop')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Selector Tabs -->
+        <div class="type-tabs" id="create-tabs">
+          <button class="type-tab active" onclick="setCreateRole('STUDENT')">
+            <span class="material-symbols-outlined">school</span>
+            <span>Student</span>
+          </button>
+          <button class="type-tab" onclick="setCreateRole('FACULTY')">
+            <span class="material-symbols-outlined">co_present</span>
+            <span>Faculty</span>
+          </button>
+          <button class="type-tab" onclick="setCreateRole('ADMIN')">
+            <span class="material-symbols-outlined">vpn_key</span>
+            <span>Admin</span>
+          </button>
+        </div>
+
+        <form id="create-user-form">
+          <!-- Common Details -->
+          <div class="modal-section-title" style="margin-top:0;">Account Details</div>
+          
+          <div class="form-group">
+            <label for="c-name">Full Name *</label>
+            <input type="text" id="c-name" class="form-control" placeholder="John Doe" required>
+            <div class="invalid-feedback" id="err-c-name"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="c-email">Email Address *</label>
+            <div class="field-wrapper">
+              <input type="email" id="c-email" class="form-control" placeholder="john.doe@smartcampus.edu" required>
+              <span class="material-symbols-outlined field-status" id="c-email-status">check_circle</span>
+            </div>
+            <div class="invalid-feedback" id="err-c-email"></div>
+          </div>
+
+          <div class="form-group" id="pwd-fields-container">
+            <label for="c-password">Password *</label>
+            <input type="password" id="c-password" class="form-control" placeholder="••••••••" required>
+            <!-- Password Strength -->
+            <div class="strength-container">
+              <div class="strength-bars">
+                <div class="strength-bar" id="c-bar-1"></div>
+                <div class="strength-bar" id="c-bar-2"></div>
+                <div class="strength-bar" id="c-bar-3"></div>
+                <div class="strength-bar" id="c-bar-4"></div>
+              </div>
+              <div class="strength-label" id="c-strength-text">Strength: Weak</div>
+            </div>
+            <div class="invalid-feedback" id="err-c-password"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="c-status">Status</label>
+            <select id="c-status" class="form-control">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+
+          <!-- Student Section -->
+          <div id="sec-student">
+            <div class="modal-section-title">Student Information</div>
+            
+            <div class="form-group">
+              <label for="c-roll">Roll Number *</label>
+              <div class="field-wrapper">
+                <input type="text" id="c-roll" class="form-control" placeholder="STU2026001">
+                <span class="material-symbols-outlined field-status" id="c-roll-status">check_circle</span>
+              </div>
+              <div class="invalid-feedback" id="err-c-roll"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3);">
+              <div class="form-group">
+                <label for="c-dept">Department *</label>
+                <select id="c-dept" class="form-control">
+                  <option value="CSE">CSE</option>
+                  <option value="ECE">ECE</option>
+                  <option value="ME">ME</option>
+                  <option value="CE">CE</option>
+                  <option value="EE">EE</option>
+                  <option value="MBA">MBA</option>
+                  <option value="MCA">MCA</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="c-semester">Semester *</label>
+                <select id="c-semester" class="form-control">
+                  <option value="1">1st Semester</option>
+                  <option value="2">2nd Semester</option>
+                  <option value="3">3rd Semester</option>
+                  <option value="4">4th Semester</option>
+                  <option value="5">5th Semester</option>
+                  <option value="6">6th Semester</option>
+                  <option value="7">7th Semester</option>
+                  <option value="8">8th Semester</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3);">
+              <div class="form-group">
+                <label for="c-dob">Date of Birth *</label>
+                <input type="date" id="c-dob" class="form-control">
+                <div class="invalid-feedback" id="err-c-dob"></div>
+              </div>
+              <div class="form-group">
+                <label for="c-phone">Phone Number *</label>
+                <input type="text" id="c-phone" class="form-control" placeholder="9876543210">
+                <div class="invalid-feedback" id="err-c-phone"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Gender</label>
+              <div style="display:flex; gap: var(--space-4); margin-top: 8px;">
+                <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+                  <input type="radio" name="c-gender" value="Male" checked> Male
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+                  <input type="radio" name="c-gender" value="Female"> Female
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+                  <input type="radio" name="c-gender" value="Prefer not to say"> Prefer not to say
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="c-address">Address</label>
+              <textarea id="c-address" class="form-control" style="height: auto; padding: var(--space-2);" rows="3" placeholder="Local address details..."></textarea>
+            </div>
+          </div>
+
+          <!-- Faculty Section -->
+          <div id="sec-faculty" style="display:none;">
+            <div class="modal-section-title">Faculty Information</div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3);">
+              <div class="form-group">
+                <label for="c-fac-dept">Department *</label>
+                <select id="c-fac-dept" class="form-control">
+                  <option value="CSE">CSE</option>
+                  <option value="ECE">ECE</option>
+                  <option value="ME">ME</option>
+                  <option value="CE">CE</option>
+                  <option value="EE">EE</option>
+                  <option value="MBA">MBA</option>
+                  <option value="MCA">MCA</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="c-fac-desig">Designation *</label>
+                <select id="c-fac-desig" class="form-control">
+                  <option value="Assistant Professor">Assistant Professor</option>
+                  <option value="Associate Professor">Associate Professor</option>
+                  <option value="Professor">Professor</option>
+                  <option value="HOD">HOD</option>
+                  <option value="Visiting Faculty">Visiting Faculty</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3);">
+              <div class="form-group">
+                <label for="c-fac-phone">Phone Number *</label>
+                <input type="text" id="c-fac-phone" class="form-control" placeholder="9876543210">
+                <div class="invalid-feedback" id="err-c-fac-phone"></div>
+              </div>
+              <div class="form-group">
+                <label for="c-fac-join">Joining Date</label>
+                <input type="date" id="c-fac-join" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="c-fac-spec">Specialization</label>
+              <input type="text" id="c-fac-spec" class="form-control" placeholder="e.g. Artificial Intelligence, VLSI">
+            </div>
+          </div>
+
+          <!-- Admin Section -->
+          <div id="sec-admin" style="display:none;">
+            <div class="modal-section-title">Admin Information</div>
+            <div class="form-group">
+              <label for="c-adm-phone">Phone Number</label>
+              <input type="text" id="c-adm-phone" class="form-control" placeholder="9876543210">
+              <div class="invalid-feedback" id="err-c-adm-phone"></div>
+            </div>
+            <div style="background-color:var(--color-brand-light); border-radius:var(--radius-md); padding:var(--space-3); font-size:var(--text-xs); color:var(--color-brand); border:1px solid rgba(26,115,232,0.1);">
+              Admin users have full system access.
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-create-backdrop')">Cancel</button>
+        <button class="btn btn-primary" id="btn-submit-create" onclick="submitCreateUserForm()">Create User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW PROFILE -->
+  <div class="modal-backdrop" id="modal-view-backdrop">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="text-lg">User Profile</h3>
+        <button class="action-btn" onclick="closeModal('modal-view-backdrop')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-5);">
+          <div class="name-avatar" id="v-avatar" style="width:64px; height:64px; font-size:var(--text-xl);">JD</div>
+          <div>
+            <h4 class="text-lg" id="v-name">John Doe</h4>
+            <p class="text-sm text-secondary" id="v-email">john.doe@smartcampus.edu</p>
+            <div style="display:flex; gap:var(--space-2); margin-top:6px;">
+              <span class="badge badge-info" id="v-role">STUDENT</span>
+              <span class="badge badge-success" id="v-status">ACTIVE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-grid" id="v-profile-info">
+          <!-- Detail fields injected dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="v-btn-edit">Edit User</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-view-backdrop')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RESET PASSWORD -->
+  <div class="modal-backdrop" id="modal-reset-pwd-backdrop">
+    <div class="modal" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="text-lg" id="reset-pwd-title">Reset Password</h3>
+        <button class="action-btn" onclick="closeModal('modal-reset-pwd-backdrop')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="background-color:var(--color-warning-light); border-radius:var(--radius-md); padding:var(--space-3); font-size:var(--text-xs); color:var(--color-warning); margin-bottom:var(--space-4); border:1px solid rgba(227,116,0,0.1);">
+          You are resetting the password for this user. They will need to use the new password to log in.
+        </div>
+        <form id="reset-pwd-form">
+          <div class="form-group">
+            <label for="r-pwd">New Password</label>
+            <input type="password" id="r-pwd" class="form-control" placeholder="••••••••" required>
+            <div class="strength-container">
+              <div class="strength-bars">
+                <div class="strength-bar" id="r-bar-1"></div>
+                <div class="strength-bar" id="r-bar-2"></div>
+                <div class="strength-bar" id="r-bar-3"></div>
+                <div class="strength-bar" id="r-bar-4"></div>
+              </div>
+              <div class="strength-label" id="r-strength-text">Strength: Weak</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="r-pwd-conf">Confirm Password</label>
+            <input type="password" id="r-pwd-conf" class="form-control" placeholder="••••••••" required>
+          </div>
+          <label style="display:flex; align-items:center; gap:var(--space-2); font-size:var(--text-sm); cursor:pointer;">
+            <input type="checkbox" checked> Send password reset email to user
+          </label>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-reset-pwd-backdrop')">Cancel</button>
+        <button class="btn btn-primary" id="btn-submit-reset-pwd" onclick="submitResetPasswordForm()">Reset Password</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Authentication Check
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      window.location.href = '/login';
+    }
+
+    // Decode initials for current admin profile top right
+    const adminEmail = localStorage.getItem('userEmail') || 'Admin';
+    document.getElementById('header-avatar').textContent = adminEmail.substring(0, 2).toUpperCase();
+
+    // Theme Management
+    const themeToggle = document.getElementById('theme-toggle');
+    const iconSpan = themeToggle.querySelector('.material-symbols-outlined');
+    
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if (iconSpan) iconSpan.textContent = 'light_mode';
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        if (iconSpan) iconSpan.textContent = 'dark_mode';
+      }
+      localStorage.setItem('sc_theme', theme);
+    }
+    
+    const savedTheme = localStorage.getItem('sc_theme') || 'light';
+    applyTheme(savedTheme);
+    
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Content fade-in animation
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('main-viewport').style.opacity = 1;
+      fetchUsers();
+    });
+
+    // Sidebar Collapse
+    const btnToggleMenu = document.getElementById('btn-toggle-menu');
+    const sidebar = document.getElementById('app-sidebar');
+    btnToggleMenu.addEventListener('click', () => {
+      if (window.innerWidth < 768) {
+        sidebar.classList.toggle('mobile-open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    });
+
+    // Toast Queuer Helper
+    const toastContainer = document.getElementById('toast-container');
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'info';
+      if (type === 'success') icon = 'check_circle';
+      else if (type === 'error') icon = 'error';
+      else if (type === 'warning') icon = 'warning';
+
+      toast.innerHTML = `
+        <span class="material-symbols-outlined toast-icon">${icon}</span>
+        <span class="text-sm font-medium" style="color:var(--color-text-primary);">${message}</span>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      // trigger reflow then add active class
+      setTimeout(() => toast.classList.add('is-active'), 50);
+      
+      // Auto dismiss
+      setTimeout(() => {
+        toast.classList.remove('is-active');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Avatar Color Palette
+    const colors = ['#E57373', '#81C784', '#64B5F6', '#FFD54F', '#BA68C8', '#4DB6AC'];
+    function getAvatarStyle(name) {
+      if (!name) return 'background-color: var(--color-brand)';
+      const idx = name.charCodeAt(0) % colors.length;
+      return `background-color: ${colors[idx]}`;
+    }
+
+    // Global State variables
+    let usersList = [];
+    let page = 0;
+    let size = 15;
+    let totalPages = 1;
+    let sortBy = 'id';
+    let sortDir = 'asc';
+    let filterRole = 'ALL';
+    let filterStatus = 'ALL';
+    let search = '';
+    let isEditingUser = false;
+    let editUserId = null;
+    let currentCreateRole = 'STUDENT';
+
+    // Filters event listeners
+    document.getElementById('filter-role').addEventListener('change', (e) => {
+      filterRole = e.target.value;
+      page = 0;
+      fetchUsers();
+    });
+    document.getElementById('filter-status').addEventListener('change', (e) => {
+      filterStatus = e.target.value;
+      page = 0;
+      fetchUsers();
+    });
+
+    // Search debounce 300ms
+    let searchTimer;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        search = e.target.value;
+        page = 0;
+        fetchUsers();
+      }, 300);
+    });
+
+    // Fetch users list
+    async function fetchUsers() {
+      const tableBody = document.getElementById('table-body');
+      const emptyBox = document.getElementById('empty-box');
+      
+      // Display skeletons
+      tableBody.innerHTML = `
+        <tr class="shimmer-row"><td colspan="5"><div class="skeleton-shimmer"></div></td></tr>
+        <tr class="shimmer-row"><td colspan="5"><div class="skeleton-shimmer"></div></td></tr>
+        <tr class="shimmer-row"><td colspan="5"><div class="skeleton-shimmer"></div></td></tr>
+        <tr class="shimmer-row"><td colspan="5"><div class="skeleton-shimmer"></div></td></tr>
+        <tr class="shimmer-row"><td colspan="5"><div class="skeleton-shimmer"></div></td></tr>
+      `;
+      emptyBox.style.display = 'none';
+
+      let enabledParam = '';
+      if (filterStatus === 'ACTIVE') enabledParam = '&enabled=true';
+      if (filterStatus === 'INACTIVE') enabledParam = '&enabled=false';
+
+      try {
+        const response = await fetch(`/api/admin/users?role=${filterRole}&search=${search}${enabledParam}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`, {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = '/login';
+          return;
+        } else if (response.status === 403) {
+          showToast("You don't have permission to perform this action", 'error');
+          return;
+        } else if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+
+        const data = await response.json();
+        usersList = data.content;
+        totalPages = data.totalPages;
+
+        // results label
+        document.getElementById('results-count').textContent = `Showing ${data.numberOfElements} of ${data.totalElements} users`;
+
+        renderTable();
+
+      } catch (err) {
+        showToast(err.message || "Something went wrong. Please try again.", 'error');
+      }
+    }
+
+    function renderTable() {
+      const tableBody = document.getElementById('table-body');
+      const emptyBox = document.getElementById('empty-box');
+      tableBody.innerHTML = '';
+
+      if (usersList.length === 0) {
+        emptyBox.style.display = 'block';
+        document.getElementById('results-count').textContent = 'Showing 0 users';
+        return;
+      }
+
+      usersList.forEach(user => {
+        const tr = document.createElement('tr');
+        const avatarText = user.name.substring(0, 2).toUpperCase();
+        
+        // badges
+        const roleClass = user.role === 'ADMIN' ? 'badge-warning' : (user.role === 'FACULTY' ? 'badge-success' : 'badge-info');
+        const statusClass = user.enabled ? 'badge-success' : 'badge-danger';
+        const statusText = user.enabled ? 'Active' : 'Inactive';
+
+        tr.innerHTML = `
+          <td>
+            <div class="avatar-cell">
+              <div class="name-avatar" style="${getAvatarStyle(user.name)}">${avatarText}</div>
+              <div>
+                <div class="text-sm font-semibold">${user.name}</div>
+                <div class="text-xs text-secondary">${user.email}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge ${roleClass}">${user.role}</span></td>
+          <td><div class="text-sm text-secondary">${user.phone || 'N/A'}</div></td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+          <td>
+            <div class="actions-cell">
+              <button class="action-btn" title="View details" onclick="viewUserProfile(${user.id})">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+              <button class="action-btn" title="Edit user" onclick="editUserPrompt(${user.id})">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button class="action-btn" title="Reset password" onclick="resetPasswordPrompt(${user.id}, '${user.name}')">
+                <span class="material-symbols-outlined">vpn_key</span>
+              </button>
+              <button class="action-btn" title="Toggle status" onclick="toggleUserStatus(${user.id}, ${user.enabled})">
+                <span class="material-symbols-outlined">${user.enabled ? 'power_off' : 'power'}</span>
+              </button>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      renderPagination();
+    }
+
+    // Pagination helper
+    function renderPagination() {
+      const pageInfo = document.getElementById('pagination-info');
+      pageInfo.textContent = `Page ${page + 1} of ${totalPages || 1}`;
+
+      document.getElementById('btn-page-prev').disabled = page === 0;
+      document.getElementById('btn-page-next').disabled = page >= (totalPages - 1);
+
+      const numbersDiv = document.getElementById('page-numbers');
+      numbersDiv.innerHTML = '';
+
+      for (let i = 0; i < totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = `page-btn ${i === page ? 'active' : ''}`;
+        btn.textContent = i + 1;
+        btn.onclick = () => {
+          page = i;
+          fetchUsers();
+        };
+        numbersDiv.appendChild(btn);
+      }
+    }
+
+    function changePage(direction) {
+      page += direction;
+      fetchUsers();
+    }
+
+    function toggleSort(field) {
+      if (sortBy === field) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortBy = field;
+        sortDir = 'asc';
+      }
+      fetchUsers();
+    }
+
+    // Modals visibility toggles
+    function openModal(id) {
+      document.getElementById(id).classList.add('is-active');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('is-active');
+    }
+
+    // USER CREATION / EDIT STATE
+    function setCreateRole(role) {
+      currentCreateRole = role;
+      
+      // Update Tab CSS UI
+      const tabs = document.getElementById('create-tabs').querySelectorAll('.type-tab');
+      tabs[0].classList.toggle('active', role === 'STUDENT');
+      tabs[1].classList.toggle('active', role === 'FACULTY');
+      tabs[2].classList.toggle('active', role === 'ADMIN');
+
+      // Toggle form subsets
+      document.getElementById('sec-student').style.display = role === 'STUDENT' ? 'block' : 'none';
+      document.getElementById('sec-faculty').style.display = role === 'FACULTY' ? 'block' : 'none';
+      document.getElementById('sec-admin').style.display = role === 'ADMIN' ? 'block' : 'none';
+      
+      // Toggle validation password requirement (if editing, password is not required)
+      document.getElementById('c-password').required = !isEditingUser;
+    }
+
+    function openCreateModal() {
+      isEditingUser = false;
+      editUserId = null;
+      document.getElementById('create-modal-title').textContent = "Create New User";
+      document.getElementById('btn-submit-create').textContent = "Create User";
+      document.getElementById('create-user-form').reset();
+      document.getElementById('pwd-fields-container').style.display = 'block';
+      document.getElementById('create-tabs').style.display = 'flex';
+      
+      // Reset statuses
+      document.getElementById('c-email-status').style.display = 'none';
+      if(document.getElementById('c-roll-status')) {
+        document.getElementById('c-roll-status').style.display = 'none';
+      }
+      clearFormErrors();
+      
+      setCreateRole('STUDENT');
+      openModal('modal-create-backdrop');
+    }
+
+    // Clear validation borders
+    function clearFormErrors() {
+      const inputs = document.getElementById('create-user-form').querySelectorAll('.form-control');
+      inputs.forEach(input => input.classList.remove('is-invalid'));
+      const feedbacks = document.getElementById('create-user-form').querySelectorAll('.invalid-feedback');
+      feedbacks.forEach(f => f.textContent = '');
+    }
+
+    // Debounce Uniqueness checks
+    let emailTimer;
+    document.getElementById('c-email').addEventListener('input', (e) => {
+      if (isEditingUser) return; // ignore on edits
+      const email = e.target.value;
+      const statusIcon = document.getElementById('c-email-status');
+      
+      statusIcon.style.display = 'none';
+      clearTimeout(emailTimer);
+      
+      if (!email.includes('@')) return;
+
+      emailTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/admin/users/check-email?email=${email}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const data = await res.json();
+          statusIcon.style.display = 'block';
+          if (data.available) {
+            statusIcon.textContent = 'check_circle';
+            statusIcon.style.color = 'var(--color-success)';
+          } else {
+            statusIcon.textContent = 'cancel';
+            statusIcon.style.color = 'var(--color-danger)';
+          }
+        } catch (e) {}
+      }, 500);
+    });
+
+    let rollTimer;
+    document.getElementById('c-roll').addEventListener('input', (e) => {
+      if (isEditingUser) return;
+      const roll = e.target.value;
+      const statusIcon = document.getElementById('c-roll-status');
+      
+      statusIcon.style.display = 'none';
+      clearTimeout(rollTimer);
+      
+      if (roll.length < 3) return;
+
+      rollTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/admin/students/check-roll?rollNumber=${roll}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const data = await res.json();
+          statusIcon.style.display = 'block';
+          if (data.available) {
+            statusIcon.textContent = 'check_circle';
+            statusIcon.style.color = 'var(--color-success)';
+          } else {
+            statusIcon.textContent = 'cancel';
+            statusIcon.style.color = 'var(--color-danger)';
+          }
+        } catch (e) {}
+      }, 500);
+    });
+
+    // Create / Update Submit logic
+    async function submitCreateUserForm() {
+      clearFormErrors();
+      const btn = document.getElementById('btn-submit-create');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div>';
+
+      const payload = {};
+      let endpoint = '';
+      let method = 'POST';
+
+      const name = document.getElementById('c-name').value;
+      const email = document.getElementById('c-email').value;
+      const enabled = document.getElementById('c-status').value === 'true';
+
+      if (isEditingUser) {
+        method = 'PUT';
+        payload.name = name;
+        payload.email = email;
+        payload.enabled = enabled;
+        payload.password = document.getElementById('c-password').value || null; // optional
+
+        if (currentCreateRole === 'STUDENT') {
+          endpoint = `/api/admin/students/${editUserId}`;
+          payload.rollNumber = document.getElementById('c-roll').value;
+          payload.department = document.getElementById('c-dept').value;
+          payload.semester = parseInt(document.getElementById('c-semester').value);
+          payload.dob = document.getElementById('c-dob').value;
+          payload.phone = document.getElementById('c-phone').value;
+          payload.gender = document.querySelector('input[name="c-gender"]:checked').value;
+          payload.address = document.getElementById('c-address').value;
+        } else if (currentCreateRole === 'FACULTY') {
+          endpoint = `/api/admin/faculty/${editUserId}`;
+          payload.department = document.getElementById('c-fac-dept').value;
+          payload.designation = document.getElementById('c-fac-desig').value;
+          payload.phone = document.getElementById('c-fac-phone').value;
+          payload.joiningDate = document.getElementById('c-fac-join').value;
+          payload.specialization = document.getElementById('c-fac-spec').value;
+        } else {
+          endpoint = `/api/admin/users/${editUserId}`;
+          payload.role = 'ADMIN';
+          payload.phone = document.getElementById('c-adm-phone').value;
+        }
+      } else {
+        // Create user
+        payload.name = name;
+        payload.email = email;
+        payload.password = document.getElementById('c-password').value;
+        payload.enabled = enabled;
+
+        if (currentCreateRole === 'STUDENT') {
+          endpoint = '/api/admin/students';
+          payload.rollNumber = document.getElementById('c-roll').value;
+          payload.department = document.getElementById('c-dept').value;
+          payload.semester = parseInt(document.getElementById('c-semester').value);
+          payload.dob = document.getElementById('c-dob').value;
+          payload.phone = document.getElementById('c-phone').value;
+          payload.gender = document.querySelector('input[name="c-gender"]:checked').value;
+          payload.address = document.getElementById('c-address').value;
+        } else if (currentCreateRole === 'FACULTY') {
+          endpoint = '/api/admin/faculty';
+          payload.department = document.getElementById('c-fac-dept').value;
+          payload.designation = document.getElementById('c-fac-desig').value;
+          payload.phone = document.getElementById('c-fac-phone').value;
+          payload.joiningDate = document.getElementById('c-fac-join').value || null;
+          payload.specialization = document.getElementById('c-fac-spec').value;
+        } else {
+          endpoint = '/api/admin/users';
+          payload.role = 'ADMIN';
+          payload.phone = document.getElementById('c-adm-phone').value;
+        }
+      }
+
+      try {
+        const response = await fetch(endpoint, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.status === 422) {
+          const data = await response.json();
+          displayFormErrors(data.errors);
+          throw new Error('Please resolve validation errors.');
+        } else if (response.status === 409) {
+          const errorMsg = await response.text().catch(() => 'Conflicting value in database.');
+          showToast(errorMsg || "Unique constraint conflict (Email or Roll Number already in use)", 'error');
+          throw new Error("Unique constraint conflict.");
+        } else if (!response.ok) {
+          const errData = await response.json().catch(() => ({ message: 'Action failed' }));
+          throw new Error(errData.message || 'Operation failed.');
+        }
+
+        showToast(isEditingUser ? "User updated successfully" : "User created successfully", 'success');
+        closeModal('modal-create-backdrop');
+        fetchUsers();
+
+      } catch (err) {
+        if (!err.message.includes('validation')) {
+          showToast(err.message, 'error');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = isEditingUser ? "Update User" : "Create User";
+      }
+    }
+
+    function displayFormErrors(errors) {
+      for (const field in errors) {
+        let inputElement = document.getElementById('c-' + field);
+        let errorMsgElement = document.getElementById('err-c-' + field);
+        
+        if (!inputElement && field.startsWith('studentProfile.')) {
+          const subField = field.split('.')[1];
+          inputElement = document.getElementById('c-' + subField);
+          errorMsgElement = document.getElementById('err-c-' + subField);
+        }
+        if (!inputElement && field.startsWith('facultyProfile.')) {
+          const subField = field.split('.')[1];
+          inputElement = document.getElementById('c-' + subField);
+          errorMsgElement = document.getElementById('err-c-' + subField);
+        }
+
+        if (inputElement) {
+          inputElement.classList.add('is-invalid');
+          if (errorMsgElement) errorMsgElement.textContent = errors[field];
+        }
+      }
+    }
+
+    // EDIT PROMPT LOADER
+    async function editUserPrompt(id) {
+      isEditingUser = true;
+      editUserId = id;
+      clearFormErrors();
+      
+      document.getElementById('create-modal-title').textContent = "Edit User";
+      document.getElementById('btn-submit-create').textContent = "Update User";
+      document.getElementById('pwd-fields-container').style.display = 'none';
+      document.getElementById('create-tabs').style.display = 'none';
+
+      // Hide check status symbols
+      document.getElementById('c-email-status').style.display = 'none';
+
+      try {
+        const response = await fetch(`/api/admin/users/${id}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const user = await response.json();
+
+        document.getElementById('c-name').value = user.name;
+        document.getElementById('c-email').value = user.email;
+        document.getElementById('c-status').value = String(user.enabled);
+
+        // Fetch details depending on role
+        if (user.role === 'STUDENT') {
+          // get student profiles list
+          const resStuds = await fetch(`/api/admin/students`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const students = await resStuds.json();
+          const student = students.find(s => s.id === id);
+          if (student) {
+            document.getElementById('c-roll').value = student.rollNumber;
+            document.getElementById('c-dept').value = student.department;
+            document.getElementById('c-semester').value = String(student.semester);
+            document.getElementById('c-dob').value = student.dob;
+            document.getElementById('c-phone').value = student.phone;
+            document.getElementById('c-address').value = student.address || '';
+            const genBtn = document.querySelector(`input[name="c-gender"][value="${student.gender || 'Male'}"]`);
+            if (genBtn) genBtn.checked = true;
+          }
+          setCreateRole('STUDENT');
+        } else if (user.role === 'FACULTY') {
+          const resFacs = await fetch(`/api/admin/faculty`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const faculties = await resFacs.json();
+          const faculty = faculties.find(f => f.id === id);
+          if (faculty) {
+            document.getElementById('c-fac-dept').value = faculty.department;
+            document.getElementById('c-fac-desig').value = faculty.designation;
+            document.getElementById('c-fac-phone').value = faculty.phone;
+            document.getElementById('c-fac-join').value = faculty.joiningDate || '';
+            document.getElementById('c-fac-spec').value = faculty.specialization || '';
+          }
+          setCreateRole('FACULTY');
+        } else {
+          document.getElementById('c-adm-phone').value = user.phone || '';
+          setCreateRole('ADMIN');
+        }
+
+        openModal('modal-create-backdrop');
+
+      } catch (e) {
+        showToast("Failed to fetch user details", 'error');
+      }
+    }
+
+    // ACTIVATE / DEACTIVATE USER
+    async function toggleUserStatus(id, currentEnabled) {
+      if (!confirm(`Are you sure you want to ${currentEnabled ? 'DEACTIVATE' : 'ACTIVATE'} this user?`)) return;
+      
+      try {
+        const response = await fetch(`/api/admin/users/${id}`, {
+          method: 'DELETE', // Soft Delete set enabled=false
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!response.ok) throw new Error("Toggle status failed.");
+        
+        showToast(`User de-activated successfully`, 'success');
+        fetchUsers();
+      } catch(e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    // VIEW PROFILE INFO MODAL
+    async function viewUserProfile(id) {
+      try {
+        const response = await fetch(`/api/admin/users/${id}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const user = await response.json();
+
+        document.getElementById('v-name').textContent = user.name;
+        document.getElementById('v-email').textContent = user.email;
+        document.getElementById('v-avatar').textContent = user.name.substring(0, 2).toUpperCase();
+        document.getElementById('v-avatar').setAttribute('style', getAvatarStyle(user.name));
+        document.getElementById('v-role').textContent = user.role;
+        
+        const statusBadge = document.getElementById('v-status');
+        statusBadge.textContent = user.enabled ? 'ACTIVE' : 'INACTIVE';
+        statusBadge.className = `badge ${user.enabled ? 'badge-success' : 'badge-danger'}`;
+
+        const grid = document.getElementById('v-profile-info');
+        grid.innerHTML = '';
+
+        document.getElementById('v-btn-edit').onclick = () => {
+          closeModal('modal-view-backdrop');
+          editUserPrompt(id);
+        };
+
+        if (user.role === 'STUDENT') {
+          const res = await fetch(`/api/admin/students`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const students = await res.json();
+          const student = students.find(s => s.id === id);
+          if (student) {
+            grid.innerHTML = `
+              <div class="profile-item"><div class="profile-label">Roll Number</div><div class="profile-value">${student.rollNumber}</div></div>
+              <div class="profile-item"><div class="profile-label">Department</div><div class="profile-value">${student.department}</div></div>
+              <div class="profile-item"><div class="profile-label">Semester</div><div class="profile-value">${student.semester}</div></div>
+              <div class="profile-item"><div class="profile-label">Phone Number</div><div class="profile-value">${student.phone}</div></div>
+              <div class="profile-item"><div class="profile-label">Date of Birth</div><div class="profile-value">${student.dob}</div></div>
+              <div class="profile-item"><div class="profile-label">Gender</div><div class="profile-value">${student.gender || 'N/A'}</div></div>
+              <div class="profile-item" style="grid-column: span 2;"><div class="profile-label">Address</div><div class="profile-value">${student.address || 'N/A'}</div></div>
+            `;
+          }
+        } else if (user.role === 'FACULTY') {
+          const res = await fetch(`/api/admin/faculty`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const faculties = await res.json();
+          const faculty = faculties.find(f => f.id === id);
+          if (faculty) {
+            grid.innerHTML = `
+              <div class="profile-item"><div class="profile-label">Department</div><div class="profile-value">${faculty.department}</div></div>
+              <div class="profile-item"><div class="profile-label">Designation</div><div class="profile-value">${faculty.designation}</div></div>
+              <div class="profile-item"><div class="profile-label">Phone Number</div><div class="profile-value">${faculty.phone}</div></div>
+              <div class="profile-item"><div class="profile-label">Joining Date</div><div class="profile-value">${faculty.joiningDate || 'N/A'}</div></div>
+              <div class="profile-item" style="grid-column: span 2;"><div class="profile-label">Specialization</div><div class="profile-value">${faculty.specialization || 'N/A'}</div></div>
+            `;
+          }
+        } else {
+          grid.innerHTML = `
+            <div class="profile-item"><div class="profile-label">Phone Number</div><div class="profile-value">${user.phone || 'N/A'}</div></div>
+            <div class="profile-item"><div class="profile-label">Access Level</div><div class="profile-value">Full System Access (Admin)</div></div>
+          `;
+        }
+
+        openModal('modal-view-backdrop');
+
+      } catch (e) {
+        showToast("Failed to retrieve profile data", 'error');
+      }
+    }
+
+    // RESET PASSWORD
+    let resetPwdUserId = null;
+    function resetPasswordPrompt(id, name) {
+      resetPwdUserId = id;
+      document.getElementById('reset-pwd-title').textContent = `Reset Password for ${name}`;
+      document.getElementById('reset-pwd-form').reset();
+      openModal('modal-reset-pwd-backdrop');
+    }
+
+    async function submitResetPasswordForm() {
+      const pwd = document.getElementById('r-pwd').value;
+      const pwdConf = document.getElementById('r-pwd-conf').value;
+      if (pwd !== pwdConf) {
+        showToast("Passwords do not match", 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-reset-pwd');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div>';
+
+      try {
+        const response = await fetch(`/api/admin/users/${resetPwdUserId}/reset-password?newPassword=${pwd}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (response.status === 422) {
+          const data = await response.json();
+          showToast(data.errors.password || "Weak password validation failed", 'error');
+          throw new Error('Weak password');
+        } else if (!response.ok) {
+          throw new Error('Password reset failed');
+        }
+
+        showToast("Password reset successfully", 'success');
+        closeModal('modal-reset-pwd-backdrop');
+      } catch(e) {
+        if (!e.message.includes('Weak')) showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Reset Password";
+      }
+    }
+  </script>
+</body>
+</html>
