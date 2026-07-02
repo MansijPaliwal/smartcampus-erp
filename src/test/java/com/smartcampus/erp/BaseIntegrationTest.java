@@ -38,18 +38,20 @@ public abstract class BaseIntegrationTest {
     @Autowired protected MarksRepository marksRepository;
     @Autowired protected FeePaymentRepository feePaymentRepository;
     @Autowired protected NotificationRepository notificationRepository;
+    @Autowired protected ExamFormRepository examFormRepository;
 
     protected void cleanupDatabase() {
-        attendanceRepository.deleteAll();
-        submissionRepository.deleteAll();
-        assignmentRepository.deleteAll();
-        marksRepository.deleteAll();
-        enrollmentRepository.deleteAll();
-        feePaymentRepository.deleteAll();
-        notificationRepository.deleteAll();
-        courseRepository.deleteAll();
-        studentProfileRepository.deleteAll();
-        facultyProfileRepository.deleteAll();
-        userRepository.deleteAll();
+        attendanceRepository.deleteAllInBatch();
+        submissionRepository.deleteAllInBatch();
+        assignmentRepository.deleteAllInBatch();
+        marksRepository.deleteAllInBatch();
+        enrollmentRepository.deleteAllInBatch();
+        feePaymentRepository.deleteAllInBatch();
+        notificationRepository.deleteAllInBatch();
+        examFormRepository.deleteAllInBatch();
+        courseRepository.deleteAllInBatch();
+        studentProfileRepository.deleteAllInBatch();
+        facultyProfileRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
     }
 }

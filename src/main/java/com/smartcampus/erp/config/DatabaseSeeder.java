@@ -179,6 +179,113 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .build();
             courseRepository.save(course3);
 
+            // AKTU Semester 3 CSE Courses
+            // Theory Courses (6)
+            Course kcs301 = Course.builder()
+                    .code("KCS301").title("Data Structures").credits(4)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs301);
+
+            Course kcs302 = Course.builder()
+                    .code("KCS302").title("Computer Organization and Architecture").credits(4)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs302);
+
+            Course kcs303 = Course.builder()
+                    .code("KCS303").title("Discrete Structures & Theory of Logic").credits(4)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs303);
+
+            Course kas301 = Course.builder()
+                    .code("KAS301").title("Technical Communication").credits(2)
+                    .department("Computer Science").faculty(facultyProfile2).build();
+            courseRepository.save(kas301);
+
+            Course koe031 = Course.builder()
+                    .code("KOE031").title("Cyber Security").credits(3)
+                    .department("Computer Science").faculty(facultyProfile2).build();
+            courseRepository.save(koe031);
+
+            Course kve301 = Course.builder()
+                    .code("KVE301").title("Universal Human Values").credits(3)
+                    .department("Computer Science").faculty(facultyProfile2).build();
+            courseRepository.save(kve301);
+
+            // Lab Courses (4)
+            Course kcs351 = Course.builder()
+                    .code("KCS351").title("Data Structures Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs351);
+
+            Course kcs352 = Course.builder()
+                    .code("KCS352").title("Computer Organization Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs352);
+
+            Course kcs353 = Course.builder()
+                    .code("KCS353").title("Discrete Structure Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs353);
+
+            Course kcs354 = Course.builder()
+                    .code("KCS354").title("Mini Project Assessment").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs354);
+
+
+            // AKTU Semester 5 CSE Courses
+            // Theory Courses (6)
+            Course kcs501 = Course.builder()
+                    .code("KCS501").title("Database Management System").credits(4)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs501);
+
+            Course kcs502 = Course.builder()
+                    .code("KCS502").title("Compiler Design").credits(4)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs502);
+
+            Course kcs503 = Course.builder()
+                    .code("KCS503").title("Design and Analysis of Algorithm").credits(4)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs503);
+
+            Course kcs051 = Course.builder()
+                    .code("KCS051").title("Web Technology").credits(3)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs051);
+
+            Course kcs054 = Course.builder()
+                    .code("KCS054").title("Object Oriented System Design").credits(3)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs054);
+
+            Course knc501 = Course.builder()
+                    .code("KNC501").title("Constitution of India").credits(2)
+                    .department("Computer Science").faculty(facultyProfile2).build();
+            courseRepository.save(knc501);
+
+            // Lab Courses (4)
+            Course kcs551 = Course.builder()
+                    .code("KCS551").title("DBMS Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs551);
+
+            Course kcs552 = Course.builder()
+                    .code("KCS552").title("Compiler Design Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs552);
+
+            Course kcs553 = Course.builder()
+                    .code("KCS553").title("DAA Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs553);
+
+            Course kcs554 = Course.builder()
+                    .code("KCS554").title("Web Technology Lab").credits(1)
+                    .department("Computer Science").faculty(facultyProfile1).build();
+            courseRepository.save(kcs554);
+
             // 5. Create Enrollments
             Enrollment enrollment1 = Enrollment.builder()
                     .student(studentProfile1)
@@ -213,37 +320,19 @@ public class DatabaseSeeder implements CommandLineRunner {
             enrollmentRepository.save(enrollment4);
 
             // 6. Seed Marks
-            marksRepository.save(Marks.builder()
-                    .student(studentProfile1)
-                    .course(course1)
-                    .examType("MID_TERM")
-                    .marksObtained(BigDecimal.valueOf(92.0))
-                    .maxMarks(BigDecimal.valueOf(100.0))
-                    .build());
-
-            marksRepository.save(Marks.builder()
-                    .student(studentProfile1)
-                    .course(course2)
-                    .examType("MID_TERM")
-                    .marksObtained(BigDecimal.valueOf(84.0))
-                    .maxMarks(BigDecimal.valueOf(100.0))
-                    .build());
-
-            marksRepository.save(Marks.builder()
-                    .student(studentProfile2)
-                    .course(course1)
-                    .examType("MID_TERM")
-                    .marksObtained(BigDecimal.valueOf(75.5))
-                    .maxMarks(BigDecimal.valueOf(100.0))
-                    .build());
-
-            marksRepository.save(Marks.builder()
-                    .student(studentProfile3)
-                    .course(course3)
-                    .examType("MID_TERM")
-                    .marksObtained(BigDecimal.valueOf(62.0))
-                    .maxMarks(BigDecimal.valueOf(100.0))
-                    .build());
+            // Theory Marks (6)
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs301).examType("FINAL").marksObtained(BigDecimal.valueOf(85.0)).maxMarks(BigDecimal.valueOf(100.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs302).examType("FINAL").marksObtained(BigDecimal.valueOf(78.0)).maxMarks(BigDecimal.valueOf(100.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs303).examType("FINAL").marksObtained(BigDecimal.valueOf(92.0)).maxMarks(BigDecimal.valueOf(100.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kas301).examType("FINAL").marksObtained(BigDecimal.valueOf(88.0)).maxMarks(BigDecimal.valueOf(100.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(koe031).examType("FINAL").marksObtained(BigDecimal.valueOf(74.0)).maxMarks(BigDecimal.valueOf(100.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kve301).examType("FINAL").marksObtained(BigDecimal.valueOf(95.0)).maxMarks(BigDecimal.valueOf(100.0)).build());
+            
+            // Lab Marks (4)
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs351).examType("FINAL_LAB").marksObtained(BigDecimal.valueOf(48.0)).maxMarks(BigDecimal.valueOf(50.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs352).examType("FINAL_LAB").marksObtained(BigDecimal.valueOf(45.0)).maxMarks(BigDecimal.valueOf(50.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs353).examType("FINAL_LAB").marksObtained(BigDecimal.valueOf(42.0)).maxMarks(BigDecimal.valueOf(50.0)).build());
+            marksRepository.save(Marks.builder().student(studentProfile1).course(kcs354).examType("FINAL_LAB").marksObtained(BigDecimal.valueOf(47.0)).maxMarks(BigDecimal.valueOf(50.0)).build());
 
             // 7. Seed Attendance
             attendanceRepository.save(Attendance.builder()

@@ -84,4 +84,70 @@ public class StudentControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Student John"))
                 .andExpect(jsonPath("$.email").value("john@smartcampus.com"));
     }
+
+    @Test
+    void getAiInsights_integrationTest() throws Exception {
+        RegisterRequest registerRequest = RegisterRequest.builder()
+                .name("Student Advisor")
+                .email("advisor@smartcampus.com")
+                .password("password123")
+                .role(Role.STUDENT)
+                .build();
+
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String regResponseBody = regResult.getResponse().getContentAsString();
+        AuthResponse authResponse = objectMapper.readValue(regResponseBody, AuthResponse.class);
+        String token = "Bearer " + authResponse.getToken();
+
+        StudentProfileRequest profileRequest = StudentProfileRequest.builder()
+                .rollNumber("ROLL-ADVISOR")
+                .department("Information Technology")
+                .semester(1)
+                .dob(LocalDate.of(2004, 8, 12))
+                .phone("+1234567890")
+                .build();
+
+        mockMvc.perform(put("/api/students/profile")
+                        .header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(profileRequest)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/students/gpa/insights")
+                        .header("Authorization", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aiInsight").exists());
+    }
+
+    @Test
+    void askAssistant_integrationTest() throws Exception {
+        RegisterRequest registerRequest = RegisterRequest.builder()
+                .name("Chat Student")
+                .email("chat@smartcampus.com")
+                .password("password123")
+                .role(Role.STUDENT)
+                .build();
+
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String regResponseBody = regResult.getResponse().getContentAsString();
+        AuthResponse authResponse = objectMapper.readValue(regResponseBody, AuthResponse.class);
+        String token = "Bearer " + authResponse.getToken();
+
+        mockMvc.perform(post("/api/support/chat")
+                        .header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"How do I pay fees?\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.response").exists());
+    }
 }

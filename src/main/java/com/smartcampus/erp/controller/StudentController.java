@@ -4,6 +4,7 @@ import com.smartcampus.erp.dto.*;
 import com.smartcampus.erp.security.UserPrincipal;
 import com.smartcampus.erp.service.GpaService;
 import com.smartcampus.erp.service.StudentService;
+import com.smartcampus.erp.service.AiAdvisorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,10 +24,12 @@ public class StudentController {
 
     private final StudentService studentService;
     private final GpaService gpaService;
+    private final AiAdvisorService aiAdvisorService;
 
-    public StudentController(StudentService studentService, GpaService gpaService) {
+    public StudentController(StudentService studentService, GpaService gpaService, AiAdvisorService aiAdvisorService) {
         this.studentService = studentService;
         this.gpaService = gpaService;
+        this.aiAdvisorService = aiAdvisorService;
     }
 
     @GetMapping("/profile")
@@ -82,5 +85,12 @@ public class StudentController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved fee status")
     public ResponseEntity<StudentFeeStatusResponse> getFeeStatus(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ResponseEntity.ok(studentService.getFeeStatus(userPrincipal.getId()));
+    }
+
+    @GetMapping("/gpa/insights")
+    @Operation(summary = "Get AI-generated academic insights", description = "Feeds dynamic course scores into GPT-4o-mini to generate an optimization blueprint.")
+    public ResponseEntity<java.util.Map<String, String>> getAiInsights(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        String insight = aiAdvisorService.generateGpaStrategyInsight(userPrincipal.getId());
+        return ResponseEntity.ok(java.util.Map.of("aiInsight", insight));
     }
 }
