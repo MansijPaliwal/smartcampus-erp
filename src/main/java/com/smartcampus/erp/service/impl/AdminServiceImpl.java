@@ -502,9 +502,9 @@ public class AdminServiceImpl implements AdminService {
         List<FeePayment> pendingPayments = feePaymentRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PaymentStatus.PENDING)
                 .collect(Collectors.toList());
-        double totalPendingFees = pendingPayments.stream()
-                .mapToDouble(FeePayment::getAmount)
-                .sum();
+        java.math.BigDecimal totalPendingFees = pendingPayments.stream()
+                .map(FeePayment::getAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
         return AdminDashboardStatsResponse.builder()
                 .studentCount(studentCount)

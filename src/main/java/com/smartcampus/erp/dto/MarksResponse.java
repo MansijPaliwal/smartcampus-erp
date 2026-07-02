@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,6 +16,6 @@ public class MarksResponse {
     private String courseCode;
     private String courseTitle;
     private String examType;
-    private Double marksObtained;
-    private Double maxMarks;
+    private BigDecimal marksObtained;
+    private BigDecimal maxMarks;
 }

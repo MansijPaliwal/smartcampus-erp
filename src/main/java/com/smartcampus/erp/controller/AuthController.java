@@ -46,6 +46,14 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh JWT access token", description = "Validate refresh token and issue a fresh access and refresh token pair.")
+    @ApiResponse(responseCode = "200", description = "Successfully refreshed tokens")
+    @ApiResponse(responseCode = "400", description = "Invalid or expired refresh token")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+
     @PostMapping("/forgot-password")
     @Operation(summary = "Request password reset", description = "Accept email, generate a token, store in Redis for 15 minutes, and output the reset link to console.")
     @ApiResponse(responseCode = "200", description = "Successfully registered forgot password token")

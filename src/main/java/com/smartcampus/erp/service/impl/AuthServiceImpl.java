@@ -51,6 +51,23 @@ public class AuthServiceImpl implements AuthService {
         this.redisTemplate = redisTemplate;
     }
 
+    private final Map<String, String> inMemoryRefreshTokens = new ConcurrentHashMap<>();
+
+    private String generateAndPersistRefreshToken(String email) {
+        String token = java.util.UUID.randomUUID().toString();
+        long ttlDays = 7;
+        if (redisTemplate != null) {
+            try {
+                redisTemplate.opsForValue().set("refresh_token:" + token, email, ttlDays, TimeUnit.DAYS);
+            } catch (Exception e) {
+                inMemoryRefreshTokens.put(token, email);
+            }
+        } else {
+            inMemoryRefreshTokens.put(token, email);
+        }
+        return token;
+    }
+
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -69,9 +86,11 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
         UserPrincipal principal = new UserPrincipal(savedUser);
         String token = jwtUtil.generateToken(principal);
+        String refreshToken = generateAndPersistRefreshToken(savedUser.getEmail());
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
                 .role(savedUser.getRole().name())
@@ -90,9 +109,60 @@ public class AuthServiceImpl implements AuthService {
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtUtil.generateToken(principal);
+        String refreshToken = generateAndPersistRefreshToken(user.getEmail());
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+        String tokenKey = "refresh_token:" + token;
+        String email = null;
+
+        if (redisTemplate != null) {
+            try {
+                email = redisTemplate.opsForValue().get(tokenKey);
+            } catch (Exception e) {
+                // fallback
+            }
+        }
+
+        if (email == null) {
+            email = inMemoryRefreshTokens.get(token);
+        }
+
+        if (email == null) {
+            throw new BadRequestException("Invalid or expired refresh token");
+        }
+
+        // Invalidate old refresh token (single-use rotation)
+        if (redisTemplate != null) {
+            try {
+                redisTemplate.delete(tokenKey);
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+        inMemoryRefreshTokens.remove(token);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User associated with token not found"));
+
+        UserPrincipal principal = new UserPrincipal(user);
+        String newAccessToken = jwtUtil.generateToken(principal);
+        String newRefreshToken = generateAndPersistRefreshToken(email);
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .userId(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().name())
@@ -104,10 +174,31 @@ public class AuthServiceImpl implements AuthService {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String jwt = authHeader.substring(7);
             try {
+                String email = jwtUtil.extractUsername(jwt);
                 Date expiration = jwtUtil.extractExpiration(jwt);
                 long ttl = expiration.getTime() - System.currentTimeMillis();
                 if (ttl > 0) {
                     blacklistService.blacklistToken(jwt, ttl);
+                }
+
+                // Invalidate refresh tokens associated with this user email
+                if (email != null) {
+                    if (redisTemplate != null) {
+                        try {
+                            java.util.Set<String> keys = redisTemplate.keys("refresh_token:*");
+                            if (keys != null) {
+                                for (String key : keys) {
+                                    String cachedEmail = redisTemplate.opsForValue().get(key);
+                                    if (email.equals(cachedEmail)) {
+                                        redisTemplate.delete(key);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+                    inMemoryRefreshTokens.entrySet().removeIf(entry -> email.equals(entry.getValue()));
                 }
             } catch (Exception e) {
                 // Token might be malformed or already expired; ignore
@@ -139,7 +230,7 @@ public class AuthServiceImpl implements AuthService {
 
         System.out.println("----------------------------------------");
         System.out.println("PASSWORD RESET LINK FOR: " + user.getEmail());
-        System.out.println("http://localhost:8080/reset-password?token=" + token);
+        System.out.println("http://localhost:8080/reset-password#token=" + token);
         System.out.println("----------------------------------------");
     }
 

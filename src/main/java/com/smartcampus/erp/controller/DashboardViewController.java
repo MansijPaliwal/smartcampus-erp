@@ -46,6 +46,11 @@ public class DashboardViewController {
         return "forward:/student-dashboard.html";
     }
 
+    @GetMapping("/faculty-dashboard")
+    public String facultyDashboard() {
+        return "forward:/faculty-dashboard.html";
+    }
+
     @GetMapping("/checkout")
     public String checkout() {
         return "forward:/checkout.html";

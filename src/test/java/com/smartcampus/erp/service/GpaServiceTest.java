@@ -39,11 +39,11 @@ public class GpaServiceTest {
         Course math = Course.builder().id(101L).code("MATH101").title("Math").credits(4).build();
         Course physics = Course.builder().id(102L).code("PHY101").title("Physics").credits(3).build();
 
-        Marks mathMid = Marks.builder().course(math).examType("MIDTERM").marksObtained(40.0).maxMarks(50.0).build();
-        Marks mathFin = Marks.builder().course(math).examType("FINAL").marksObtained(45.0).maxMarks(50.0).build();
+        Marks mathMid = Marks.builder().course(math).examType("MIDTERM").marksObtained(java.math.BigDecimal.valueOf(40.0)).maxMarks(java.math.BigDecimal.valueOf(50.0)).build();
+        Marks mathFin = Marks.builder().course(math).examType("FINAL").marksObtained(java.math.BigDecimal.valueOf(45.0)).maxMarks(java.math.BigDecimal.valueOf(50.0)).build();
 
-        Marks phyQuiz = Marks.builder().course(physics).examType("QUIZ").marksObtained(8.0).maxMarks(10.0).build();
-        Marks phyFin = Marks.builder().course(physics).examType("FINAL").marksObtained(72.0).maxMarks(90.0).build();
+        Marks phyQuiz = Marks.builder().course(physics).examType("QUIZ").marksObtained(java.math.BigDecimal.valueOf(8.0)).maxMarks(java.math.BigDecimal.valueOf(10.0)).build();
+        Marks phyFin = Marks.builder().course(physics).examType("FINAL").marksObtained(java.math.BigDecimal.valueOf(72.0)).maxMarks(java.math.BigDecimal.valueOf(90.0)).build();
 
         List<Marks> marks = Arrays.asList(mathMid, mathFin, phyQuiz, phyFin);
         when(marksRepository.findByStudentId(studentId)).thenReturn(marks);

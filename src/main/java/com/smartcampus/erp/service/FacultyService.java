@@ -10,4 +10,5 @@ public interface FacultyService {
     FacultyProfileResponse createOrUpdateProfile(Long facultyUserId, FacultyProfileRequest request);
     void markAttendance(Long facultyUserId, AttendanceRecordRequest request);
     void enterMarks(Long facultyUserId, MarksRequest request);
+    java.util.List<com.smartcampus.erp.dto.CourseResponse> getCourses(Long facultyUserId);
 }

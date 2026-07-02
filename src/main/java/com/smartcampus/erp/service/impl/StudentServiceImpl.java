@@ -150,15 +150,17 @@ public class StudentServiceImpl implements StudentService {
 
         List<FeePayment> payments = feePaymentRepository.findByStudentId(studentUserId);
         
-        double totalDues = payments.stream().mapToDouble(FeePayment::getAmount).sum();
-        double totalPaid = payments.stream()
+        java.math.BigDecimal totalDues = payments.stream()
+                .map(FeePayment::getAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal totalPaid = payments.stream()
                 .filter(p -> p.getStatus() == PaymentStatus.PAID)
-                .mapToDouble(FeePayment::getAmount)
-                .sum();
-        double pendingDues = payments.stream()
+                .map(FeePayment::getAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal pendingDues = payments.stream()
                 .filter(p -> p.getStatus() == PaymentStatus.PENDING)
-                .mapToDouble(FeePayment::getAmount)
-                .sum();
+                .map(FeePayment::getAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
         List<FeePaymentResponse> history = payments.stream()
                 .map(p -> FeePaymentResponse.builder()

@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,5 +16,5 @@ import lombok.NoArgsConstructor;
 public class GradeSubmissionRequest {
     @NotNull(message = "Marks obtained is required")
     @DecimalMin(value = "0.0", message = "Marks cannot be negative")
-    private Double marksObtained;
+    private BigDecimal marksObtained;
 }

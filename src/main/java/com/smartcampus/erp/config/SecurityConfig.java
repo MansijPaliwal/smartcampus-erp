@@ -1,6 +1,7 @@
 package com.smartcampus.erp.config;
 
 import com.smartcampus.erp.security.JwtAuthFilter;
+import com.smartcampus.erp.security.RateLimitingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,10 +26,12 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final RateLimitingFilter rateLimitingFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsService userDetailsService) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsService userDetailsService, RateLimitingFilter rateLimitingFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
+        this.rateLimitingFilter = rateLimitingFilter;
     }
 
     @Bean
@@ -39,6 +42,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/api/auth/register",
                         "/api/auth/login",
+                        "/api/auth/refresh",
                         "/api/auth/forgot-password",
                         "/api/auth/reset-password",
                         "/v3/api-docs/**",
@@ -59,7 +63,10 @@ public class SecurityConfig {
                         "/dashboard.html",
                         "/student-dashboard",
                         "/student-dashboard.html",
+                        "/faculty-dashboard",
+                        "/faculty-dashboard.html",
                         "/checkout",
+                        "/checkout.html",
                         "/design-system.css",
                         "/favicon.ico",
                         "/"
@@ -68,6 +75,7 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

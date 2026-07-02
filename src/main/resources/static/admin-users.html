@@ -473,6 +473,12 @@
             <span>Settings</span>
           </a>
         </li>
+        <li class="sidebar-item" style="margin-top: auto; padding-top: var(--space-4);">
+          <a href="#" class="sidebar-link" id="btn-logout" style="color: var(--color-danger);">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Logout</span>
+          </a>
+        </li>
       </ul>
     </aside>
 
@@ -919,6 +925,26 @@
         sidebar.classList.toggle('collapsed');
       }
     });
+
+    // Logout handler
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (err) {
+          console.error("Logout request failed", err);
+        }
+        localStorage.clear();
+        window.location.href = '/login';
+      });
+    }
 
     // Toast Queuer Helper
     const toastContainer = document.getElementById('toast-container');

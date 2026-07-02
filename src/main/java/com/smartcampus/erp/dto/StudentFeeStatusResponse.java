@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -11,8 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class StudentFeeStatusResponse {
-    private Double totalDues;
-    private Double totalPaid;
-    private Double pendingDues;
+    private BigDecimal totalDues;
+    private BigDecimal totalPaid;
+    private BigDecimal pendingDues;
     private List<FeePaymentResponse> paymentHistory;
 }

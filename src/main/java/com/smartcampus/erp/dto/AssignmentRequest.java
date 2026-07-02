@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -30,5 +31,5 @@ public class AssignmentRequest {
 
     @NotNull(message = "Max marks is required")
     @DecimalMin(value = "0.1", message = "Max marks must be greater than zero")
-    private Double maxMarks;
+    private BigDecimal maxMarks;
 }

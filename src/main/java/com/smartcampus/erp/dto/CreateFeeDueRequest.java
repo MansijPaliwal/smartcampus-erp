@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,5 +19,5 @@ public class CreateFeeDueRequest {
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "1.0", message = "Amount must be at least 1.0")
-    private Double amount;
+    private BigDecimal amount;
 }

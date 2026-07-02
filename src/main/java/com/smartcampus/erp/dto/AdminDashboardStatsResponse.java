@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,5 +15,5 @@ public class AdminDashboardStatsResponse {
     private Long studentCount;
     private Long facultyCount;
     private Long courseCount;
-    private Double totalPendingFees;
+    private BigDecimal totalPendingFees;
 }

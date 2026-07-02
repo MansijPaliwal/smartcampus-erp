@@ -6,6 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -216,32 +217,32 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .student(studentProfile1)
                     .course(course1)
                     .examType("MID_TERM")
-                    .marksObtained(92.0)
-                    .maxMarks(100.0)
+                    .marksObtained(BigDecimal.valueOf(92.0))
+                    .maxMarks(BigDecimal.valueOf(100.0))
                     .build());
 
             marksRepository.save(Marks.builder()
                     .student(studentProfile1)
                     .course(course2)
                     .examType("MID_TERM")
-                    .marksObtained(84.0)
-                    .maxMarks(100.0)
+                    .marksObtained(BigDecimal.valueOf(84.0))
+                    .maxMarks(BigDecimal.valueOf(100.0))
                     .build());
 
             marksRepository.save(Marks.builder()
                     .student(studentProfile2)
                     .course(course1)
                     .examType("MID_TERM")
-                    .marksObtained(75.5)
-                    .maxMarks(100.0)
+                    .marksObtained(BigDecimal.valueOf(75.5))
+                    .maxMarks(BigDecimal.valueOf(100.0))
                     .build());
 
             marksRepository.save(Marks.builder()
                     .student(studentProfile3)
                     .course(course3)
                     .examType("MID_TERM")
-                    .marksObtained(62.0)
-                    .maxMarks(100.0)
+                    .marksObtained(BigDecimal.valueOf(62.0))
+                    .maxMarks(BigDecimal.valueOf(100.0))
                     .build());
 
             // 7. Seed Attendance
@@ -269,7 +270,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             // 8. Seed Tuition Billing Invoices & Payments
             feePaymentRepository.save(FeePayment.builder()
                     .student(studentProfile1)
-                    .amount(1250.0)
+                    .amount(BigDecimal.valueOf(1250.0))
                     .status(PaymentStatus.PAID)
                     .paymentDate(LocalDateTime.now().minusDays(5))
                     .transactionId(UUID.randomUUID().toString())
@@ -278,19 +279,19 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             feePaymentRepository.save(FeePayment.builder()
                     .student(studentProfile1)
-                    .amount(1500.0)
+                    .amount(BigDecimal.valueOf(1500.0))
                     .status(PaymentStatus.PENDING)
                     .build());
 
             feePaymentRepository.save(FeePayment.builder()
                     .student(studentProfile1)
-                    .amount(3200.0)
+                    .amount(BigDecimal.valueOf(3200.0))
                     .status(PaymentStatus.PENDING)
                     .build());
 
             feePaymentRepository.save(FeePayment.builder()
                     .student(studentProfile2)
-                    .amount(1250.0)
+                    .amount(BigDecimal.valueOf(1250.0))
                     .status(PaymentStatus.PENDING)
                     .build());
 

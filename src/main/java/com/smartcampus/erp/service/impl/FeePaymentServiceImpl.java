@@ -51,7 +51,7 @@ public class FeePaymentServiceImpl implements FeePaymentService {
         FeePayment saved = feePaymentRepository.save(feePayment);
 
         // Notify Student
-        String msg = String.format("A new tuition fee due of %.2f has been registered on your account.", request.getAmount());
+        String msg = String.format("A new tuition fee due of %.2f has been registered on your account.", request.getAmount().doubleValue());
         notificationService.createNotification(student.getId(), "Fee Dues Created", msg);
 
         return mapToFeePaymentResponse(saved);
@@ -87,16 +87,16 @@ public class FeePaymentServiceImpl implements FeePaymentService {
         feePayment.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CARD");
 
         // Note: we can verify request.getAmount() matches feePayment.getAmount() if needed
-        if (!request.getAmount().equals(feePayment.getAmount())) {
+        if (request.getAmount().compareTo(feePayment.getAmount()) != 0) {
              throw new BadRequestException(String.format("Payment amount (%.2f) does not match fee amount (%.2f)",
-                     request.getAmount(), feePayment.getAmount()));
+                     request.getAmount().doubleValue(), feePayment.getAmount().doubleValue()));
         }
 
         FeePayment saved = feePaymentRepository.save(feePayment);
 
         // Notify Student
         String msg = String.format("Your payment of %.2f has been successfully recorded under Transaction ID: %s.",
-                saved.getAmount(), saved.getTransactionId());
+                saved.getAmount().doubleValue(), saved.getTransactionId());
         notificationService.createNotification(studentUserId, "Fee Payment Successful", msg);
 
         return mapToFeePaymentResponse(saved);

@@ -4,7 +4,10 @@ import com.smartcampus.erp.dto.AttendanceRecordRequest;
 import com.smartcampus.erp.dto.FacultyProfileRequest;
 import com.smartcampus.erp.dto.FacultyProfileResponse;
 import com.smartcampus.erp.dto.MarksRequest;
+import com.smartcampus.erp.dto.CourseResponse;
 import com.smartcampus.erp.entity.*;
+import java.util.List;
+import java.util.stream.Collectors;
 import com.smartcampus.erp.exception.BadRequestException;
 import com.smartcampus.erp.exception.ResourceNotFoundException;
 import com.smartcampus.erp.exception.UnauthorizedException;
@@ -127,7 +130,7 @@ public class FacultyServiceImpl implements FacultyService {
         StudentProfile student = studentProfileRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for ID: " + request.getStudentId()));
 
-        if (request.getMarksObtained() > request.getMaxMarks()) {
+        if (request.getMarksObtained().compareTo(request.getMaxMarks()) > 0) {
             throw new BadRequestException("Marks obtained cannot exceed maximum marks");
         }
 
@@ -153,7 +156,7 @@ public class FacultyServiceImpl implements FacultyService {
 
         // Auto-create notification for student
         String msg = String.format("Your marks for %s (%s) have been updated: %.2f / %.2f",
-                course.getTitle(), request.getExamType(), request.getMarksObtained(), request.getMaxMarks());
+                course.getTitle(), request.getExamType(), request.getMarksObtained().doubleValue(), request.getMaxMarks().doubleValue());
         notificationService.createNotification(student.getId(), "Marks Published", msg);
     }
 
@@ -165,5 +168,24 @@ public class FacultyServiceImpl implements FacultyService {
                 .department(profile.getDepartment())
                 .designation(profile.getDesignation())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CourseResponse> getCourses(Long facultyUserId) {
+        FacultyProfile profile = facultyProfileRepository.findById(facultyUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Faculty profile not found for user ID: " + facultyUserId));
+        List<Course> courses = courseRepository.findByFacultyId(profile.getId());
+        return courses.stream()
+                .map(c -> CourseResponse.builder()
+                        .id(c.getId())
+                        .code(c.getCode())
+                        .title(c.getTitle())
+                        .credits(c.getCredits())
+                        .department(c.getDepartment())
+                        .facultyId(profile.getId())
+                        .facultyName(profile.getUser().getName())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

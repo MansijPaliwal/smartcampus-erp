@@ -4,6 +4,7 @@ import com.smartcampus.erp.dto.AttendanceRecordRequest;
 import com.smartcampus.erp.dto.FacultyProfileRequest;
 import com.smartcampus.erp.dto.FacultyProfileResponse;
 import com.smartcampus.erp.dto.MarksRequest;
+import com.smartcampus.erp.dto.CourseResponse;
 import com.smartcampus.erp.security.UserPrincipal;
 import com.smartcampus.erp.service.FacultyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/faculties")
@@ -65,5 +67,12 @@ public class FacultyController {
             @Valid @RequestBody MarksRequest request) {
         facultyService.enterMarks(userPrincipal.getId(), request);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/courses")
+    @Operation(summary = "Get courses taught by faculty", description = "Retrieve list of all courses taught by the currently logged-in faculty member.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved courses")
+    public ResponseEntity<List<CourseResponse>> getCourses(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ResponseEntity.ok(facultyService.getCourses(userPrincipal.getId()));
     }
 }

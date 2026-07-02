@@ -68,37 +68,46 @@ public class GpaServiceImpl implements GpaService {
                 .collect(Collectors.groupingBy(Marks::getCourse));
 
         List<CourseGradeDto> courseGrades = new ArrayList<>();
-        double totalWeightedGradePoints = 0.0;
+        java.math.BigDecimal totalWeightedGradePoints = java.math.BigDecimal.ZERO;
         int totalCredits = 0;
 
         for (Map.Entry<Course, List<Marks>> entry : marksByCourse.entrySet()) {
             Course course = entry.getKey();
             List<Marks> courseMarks = entry.getValue();
 
-            double totalObtained = courseMarks.stream().mapToDouble(Marks::getMarksObtained).sum();
-            double totalMax = courseMarks.stream().mapToDouble(Marks::getMaxMarks).sum();
+            java.math.BigDecimal totalObtained = courseMarks.stream()
+                    .map(Marks::getMarksObtained)
+                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+            java.math.BigDecimal totalMax = courseMarks.stream()
+                    .map(Marks::getMaxMarks)
+                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
-            double percentage = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0.0;
+            java.math.BigDecimal percentage = java.math.BigDecimal.ZERO;
+            if (totalMax.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                percentage = totalObtained.divide(totalMax, 4, java.math.RoundingMode.HALF_UP)
+                        .multiply(java.math.BigDecimal.valueOf(100));
+            }
 
             String letterGrade;
             int gradePoint;
 
-            if (percentage >= 90.0) {
+            double pctDouble = percentage.doubleValue();
+            if (pctDouble >= 90.0) {
                 letterGrade = "O";
                 gradePoint = 10;
-            } else if (percentage >= 80.0) {
+            } else if (pctDouble >= 80.0) {
                 letterGrade = "A+";
                 gradePoint = 9;
-            } else if (percentage >= 70.0) {
+            } else if (pctDouble >= 70.0) {
                 letterGrade = "A";
                 gradePoint = 8;
-            } else if (percentage >= 60.0) {
+            } else if (pctDouble >= 60.0) {
                 letterGrade = "B+";
                 gradePoint = 7;
-            } else if (percentage >= 50.0) {
+            } else if (pctDouble >= 50.0) {
                 letterGrade = "B";
                 gradePoint = 6;
-            } else if (percentage >= 40.0) {
+            } else if (pctDouble >= 40.0) {
                 letterGrade = "C";
                 gradePoint = 5;
             } else {
@@ -107,22 +116,25 @@ public class GpaServiceImpl implements GpaService {
             }
 
             int credits = course.getCredits();
-            totalWeightedGradePoints += (gradePoint * credits);
+            totalWeightedGradePoints = totalWeightedGradePoints.add(
+                    java.math.BigDecimal.valueOf(gradePoint).multiply(java.math.BigDecimal.valueOf(credits))
+            );
             totalCredits += credits;
 
             courseGrades.add(CourseGradeDto.builder()
                     .courseCode(course.getCode())
                     .courseTitle(course.getTitle())
-                    .percentage(Math.round(percentage * 100.0) / 100.0) // round to 2 decimals
+                    .percentage(percentage.setScale(2, java.math.RoundingMode.HALF_UP).doubleValue())
                     .letterGrade(letterGrade)
                     .gradePoint(gradePoint)
                     .credits(credits)
                     .build());
         }
 
-        double finalGpa = totalCredits > 0 ? totalWeightedGradePoints / totalCredits : 0.0;
-        // Round GPA to 2 decimal places
-        finalGpa = Math.round(finalGpa * 100.0) / 100.0;
+        double finalGpa = 0.0;
+        if (totalCredits > 0) {
+            finalGpa = totalWeightedGradePoints.divide(java.math.BigDecimal.valueOf(totalCredits), 2, java.math.RoundingMode.HALF_UP).doubleValue();
+        }
 
         return GpaResponse.builder()
                 .studentId(studentUserId)

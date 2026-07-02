@@ -131,7 +131,7 @@ public class AssignmentServiceImpl implements AssignmentService {
             throw new UnauthorizedException("Faculty is not authorized to grade this submission");
         }
 
-        if (request.getMarksObtained() > assignment.getMaxMarks()) {
+        if (request.getMarksObtained().compareTo(assignment.getMaxMarks()) > 0) {
             throw new BadRequestException("Marks obtained cannot exceed maximum assignment marks of: " + assignment.getMaxMarks());
         }
 
@@ -140,7 +140,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         // Notify student
         String msg = String.format("Your submission for %s has been graded: %.2f / %.2f.",
-                assignment.getTitle(), request.getMarksObtained(), assignment.getMaxMarks());
+                assignment.getTitle(), request.getMarksObtained().doubleValue(), assignment.getMaxMarks().doubleValue());
         notificationService.createNotification(submission.getStudent().getId(), "Assignment Graded", msg);
 
         return mapToSubmissionResponse(saved);

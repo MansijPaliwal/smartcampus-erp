@@ -2,6 +2,7 @@ package com.smartcampus.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "marks", uniqueConstraints = {
@@ -28,8 +29,8 @@ public class Marks {
     private String examType; // MIDTERM, FINAL, QUIZ, etc.
 
     @Column(name = "marks_obtained", nullable = false)
-    private Double marksObtained;
+    private BigDecimal marksObtained;
 
     @Column(name = "max_marks", nullable = false)
-    private Double maxMarks;
+    private BigDecimal maxMarks;
 }

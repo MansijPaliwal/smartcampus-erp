@@ -97,15 +97,15 @@ public class StudentServiceTest {
     @Test
     void getFeeStatus_success() {
         when(studentProfileRepository.existsById(1L)).thenReturn(true);
-        FeePayment p1 = FeePayment.builder().amount(1500.0).status(PaymentStatus.PAID).paymentDate(LocalDateTime.now()).build();
-        FeePayment p2 = FeePayment.builder().amount(500.0).status(PaymentStatus.PENDING).build();
+        FeePayment p1 = FeePayment.builder().amount(java.math.BigDecimal.valueOf(1500.0)).status(PaymentStatus.PAID).paymentDate(LocalDateTime.now()).build();
+        FeePayment p2 = FeePayment.builder().amount(java.math.BigDecimal.valueOf(500.0)).status(PaymentStatus.PENDING).build();
         when(feePaymentRepository.findByStudentId(1L)).thenReturn(Arrays.asList(p1, p2));
 
         StudentFeeStatusResponse status = studentService.getFeeStatus(1L);
         assertNotNull(status);
-        assertEquals(2000.0, status.getTotalDues());
-        assertEquals(1500.0, status.getTotalPaid());
-        assertEquals(500.0, status.getPendingDues());
+        assertEquals(2000.0, status.getTotalDues().doubleValue());
+        assertEquals(1500.0, status.getTotalPaid().doubleValue());
+        assertEquals(500.0, status.getPendingDues().doubleValue());
         assertEquals(2, status.getPaymentHistory().size());
     }
 }

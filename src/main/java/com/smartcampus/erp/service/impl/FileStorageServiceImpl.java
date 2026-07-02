@@ -6,12 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -19,17 +18,20 @@ import java.util.UUID;
 @Service
 public class FileStorageServiceImpl implements FileStorageService {
 
-    private final Path fileStorageLocation;
+    private final S3Client s3Client;
+    private final String bucketName;
+    private final String publicUrlPrefix;
+
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("pdf", "zip", "png", "jpg", "jpeg");
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-    public FileStorageServiceImpl(@Value("${app.upload.dir:uploads}") String uploadDir) {
-        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(this.fileStorageLocation);
-        } catch (Exception ex) {
-            throw new FileStorageException("Could not create the directory where the uploaded files will be stored.", ex);
-        }
+    public FileStorageServiceImpl(
+            S3Client s3Client,
+            @Value("${aws.s3.bucket:mock-bucket}") String bucketName,
+            @Value("${aws.s3.public-url-prefix:http://localhost:8080/uploads}") String publicUrlPrefix) {
+        this.s3Client = s3Client;
+        this.bucketName = bucketName;
+        this.publicUrlPrefix = publicUrlPrefix;
     }
 
     @Override
@@ -60,13 +62,21 @@ public class FileStorageServiceImpl implements FileStorageService {
             // Create a unique file name to avoid collision
             String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
 
-            // Copy file to the target location
-            Path targetLocation = this.fileStorageLocation.resolve(uniqueFileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            // Stream to AWS S3
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(uniqueFileName)
+                    .contentType(file.getContentType())
+                    .build();
 
-            return uniqueFileName;
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+            // Return a stable cloud URL
+            return publicUrlPrefix + "/" + uniqueFileName;
         } catch (IOException ex) {
-            throw new FileStorageException("Could not store file " + originalFileName + ". Please try again!", ex);
+            throw new FileStorageException("Could not store file " + originalFileName + " to S3. Please try again!", ex);
+        } catch (Exception ex) {
+            throw new FileStorageException("S3 Storage upload failed for file " + originalFileName, ex);
         }
     }
 

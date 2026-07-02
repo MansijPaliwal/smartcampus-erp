@@ -2,6 +2,7 @@ package com.smartcampus.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,5 +30,5 @@ public class Assignment {
     private LocalDateTime dueDate;
 
     @Column(name = "max_marks", nullable = false)
-    private Double maxMarks;
+    private BigDecimal maxMarks;
 }

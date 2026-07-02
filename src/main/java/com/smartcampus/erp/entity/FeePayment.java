@@ -2,6 +2,7 @@ package com.smartcampus.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,7 +21,7 @@ public class FeePayment {
     private StudentProfile student;
 
     @Column(nullable = false)
-    private Double amount;
+    private BigDecimal amount;
 
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;

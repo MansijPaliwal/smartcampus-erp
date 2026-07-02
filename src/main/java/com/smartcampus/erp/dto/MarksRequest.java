@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,9 +26,9 @@ public class MarksRequest {
 
     @NotNull(message = "Marks obtained is required")
     @DecimalMin(value = "0.0", message = "Marks cannot be negative")
-    private Double marksObtained;
+    private BigDecimal marksObtained;
 
     @NotNull(message = "Max marks is required")
     @DecimalMin(value = "0.1", message = "Max marks must be greater than zero")
-    private Double maxMarks;
+    private BigDecimal maxMarks;
 }

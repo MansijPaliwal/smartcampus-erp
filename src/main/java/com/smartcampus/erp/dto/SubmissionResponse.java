@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,5 +20,5 @@ public class SubmissionResponse {
     private String studentName;
     private String fileUrl;
     private LocalDateTime submittedAt;
-    private Double marksObtained;
+    private BigDecimal marksObtained;
 }
