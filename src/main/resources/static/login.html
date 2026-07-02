@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCampus ERP — Administration Portal</title>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" rel="stylesheet">
+  <!-- Core Design System -->
+  <link rel="stylesheet" href="/design-system.css?v=2">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: var(--color-surface);
+      position: relative;
+      padding: var(--space-4);
+    }
+    
+    .theme-toggle-container {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+    }
+    
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-border);
+    }
+    
+    .wordmark-container {
+      margin-bottom: var(--space-6);
+      text-align: left;
+    }
+    .wordmark-title {
+      font-size: var(--text-2xl);
+      line-height: 1.2;
+    }
+    .wordmark-title .smart {
+      font-weight: 400;
+      color: var(--color-text-primary);
+    }
+    .wordmark-title .campus {
+      font-weight: 600;
+      color: var(--color-brand);
+    }
+    .wordmark-title .erp {
+      display: block;
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .wordmark-subtitle {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      margin-top: var(--space-1);
+    }
+    
+    /* Password field with show/hide */
+    .password-wrapper {
+      position: relative;
+    }
+    .password-wrapper .form-control {
+      padding-right: var(--space-10);
+    }
+    .password-toggle {
+      position: absolute;
+      right: var(--space-2);
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: var(--radius-full);
+    }
+    .password-toggle:hover {
+      background-color: var(--color-surface);
+      color: var(--color-text-primary);
+    }
+    
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-5);
+      font-size: var(--text-sm);
+    }
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      cursor: pointer;
+    }
+    .remember-me input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .forgot-link {
+      color: var(--color-brand);
+      font-weight: 500;
+    }
+    
+    .demo-box {
+      background-color: var(--color-brand-light);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      margin-top: var(--space-5);
+      border: 1px solid rgba(26, 115, 232, 0.1);
+    }
+    .demo-title {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-brand);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-2);
+    }
+    .demo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      color: var(--color-text-primary);
+      padding: 4px 0;
+    }
+    .demo-row:not(:last-child) {
+      border-bottom: 1px solid rgba(26, 115, 232, 0.08);
+    }
+    .demo-cred {
+      font-family: var(--font-mono);
+      color: var(--color-text-secondary);
+    }
+    .btn-use {
+      height: 24px;
+      padding: 0 var(--space-2);
+      font-size: 10px;
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--color-brand);
+      font-weight: 600;
+      transition: all 100ms;
+    }
+    .btn-use:hover {
+      background-color: var(--color-brand);
+      color: var(--color-text-inverse);
+      border-color: var(--color-brand);
+    }
+    
+    .error-alert {
+      display: none;
+      background-color: var(--color-danger-light);
+      color: var(--color-danger);
+      font-size: var(--text-sm);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+      border: 1px solid rgba(217, 48, 37, 0.1);
+    }
+    
+    .footer-text {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      margin-top: var(--space-6);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="theme-toggle-container">
+    <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Light/Dark Mode">
+      <span class="material-symbols-outlined">dark_mode</span>
+    </button>
+  </div>
+
+  <div class="login-card">
+    <div class="wordmark-container">
+      <div class="wordmark-title">
+        <span class="smart">Smart</span><span class="campus">Campus</span>
+        <span class="erp">ERP</span>
+      </div>
+      <div class="wordmark-subtitle">Administration Portal</div>
+    </div>
+
+    <div class="error-alert" id="error-box"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" class="form-control" placeholder="name@smartcampus.edu" required autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="password-toggle" id="password-toggle" title="Show/Hide Password">
+            <span class="material-symbols-outlined" id="eye-icon">visibility</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <label class="remember-me">
+          <input type="checkbox" id="remember">
+          <span>Remember me</span>
+        </label>
+        <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; height: 44px;" id="btn-submit">
+        <span>Sign in</span>
+      </button>
+    </form>
+
+    <div class="demo-box">
+      <div class="demo-title">Demo Credentials</div>
+      
+      <div class="demo-row">
+        <span>Admin: <span class="demo-cred">admin.system@smartcampus.edu</span></span>
+        <button class="btn-use" onclick="fillCreds('admin.system@smartcampus.edu', 'AdminSystem@2026')">Use</button>
+      </div>
+      
+      <div class="demo-row">
+        <span>Faculty: <span class="demo-cred">alan.turing@smartcampus.edu</span></span>
+        <button class="btn-use" onclick="fillCreds('alan.turing@smartcampus.edu', 'AlanFaculty@2026')">Use</button>
+      </div>
+
+      <div class="demo-row">
+        <span>Student: <span class="demo-cred">aarav.sharma@smartcampus.edu</span></span>
+        <button class="btn-use" onclick="fillCreds('aarav.sharma@smartcampus.edu', 'AaravStudent@2026')">Use</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-text">
+    &copy; 2026 SmartCampus ERP System
+  </div>
+
+  <script>
+    // Theme Management
+    const themeToggle = document.getElementById('theme-toggle');
+    const iconSpan = themeToggle.querySelector('.material-symbols-outlined');
+    
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if (iconSpan) iconSpan.textContent = 'light_mode';
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        if (iconSpan) iconSpan.textContent = 'dark_mode';
+      }
+      localStorage.setItem('sc_theme', theme);
+    }
+    
+    // Initial Theme Load
+    const savedTheme = localStorage.getItem('sc_theme') || 'light';
+    applyTheme(savedTheme);
+    
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Prefill helper
+    function fillCreds(email, password) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = password;
+    }
+
+    // Password visibility toggle
+    const pwdInput = document.getElementById('password');
+    const pwdToggle = document.getElementById('password-toggle');
+    const eyeIcon = document.getElementById('eye-icon');
+    
+    pwdToggle.addEventListener('click', () => {
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.textContent = 'visibility_off';
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.textContent = 'visibility';
+      }
+    });
+
+    // Submit Action
+    const form = document.getElementById('login-form');
+    const btnSubmit = document.getElementById('btn-submit');
+    const errorBox = document.getElementById('error-box');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+      
+      // Loading State
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<div class="spinner"></div>';
+
+      const email = document.getElementById('email').value;
+      const password = pwdInput.value;
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ message: 'Invalid credentials' }));
+          throw new Error(errData.message || 'Authentication failed. Please verify credentials.');
+        }
+
+        const data = await response.json();
+        
+        // Save JWT & user details
+        localStorage.setItem('jwtToken', data.token);
+        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('userId', data.userId);
+
+        // Redirect based on role
+        if (data.role === 'ADMIN') {
+          window.location.href = '/dashboard';
+        } else if (data.role === 'STUDENT') {
+          window.location.href = '/student-dashboard';
+        } else if (data.role === 'FACULTY') {
+          alert('Faculty dashboard is API-only. Redirecting to API Swagger documentation.');
+          window.location.href = '/swagger-ui.html';
+        } else {
+          window.location.href = '/';
+        }
+
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+        
+        // Restore button state
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Sign in</span>';
+      }
+    });
+  </script>
+</body>
+</html>
