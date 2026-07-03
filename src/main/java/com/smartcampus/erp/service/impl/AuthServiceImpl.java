@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -228,10 +230,10 @@ public class AuthServiceImpl implements AuthService {
             inMemoryResetExpiry.put(token, System.currentTimeMillis() + (ttlMinutes * 60 * 1000));
         }
 
-        System.out.println("----------------------------------------");
-        System.out.println("PASSWORD RESET LINK FOR: " + user.getEmail());
-        System.out.println("http://localhost:8080/reset-password#token=" + token);
-        System.out.println("----------------------------------------");
+        log.info("----------------------------------------");
+        log.info("PASSWORD RESET LINK FOR: {}", user.getEmail());
+        log.info("http://localhost:8080/reset-password#token={}", token);
+        log.info("----------------------------------------");
     }
 
     @Override

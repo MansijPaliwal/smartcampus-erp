@@ -11,7 +11,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class DatabaseSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -401,7 +404,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .isRead(false)
                     .build());
 
-            System.out.println("Seeded database with rich mock statistics dataset successfully.");
+            log.info("Seeded database with rich mock statistics dataset successfully.");
         }
     }
 }

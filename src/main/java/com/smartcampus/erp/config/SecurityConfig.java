@@ -73,7 +73,8 @@ public class SecurityConfig {
                         "/checkout.html",
                         "/design-system.css",
                         "/favicon.ico",
-                        "/"
+                        "/",
+                        "/actuator/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
