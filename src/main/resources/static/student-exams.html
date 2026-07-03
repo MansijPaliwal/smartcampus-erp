@@ -420,10 +420,27 @@
                 </div>
               </div>
               
-              <div style="margin-top: var(--space-3);">
-                <h4 class="text-sm" style="font-weight: 600; margin-bottom: var(--space-2); color: var(--color-text-primary);">Registered Examination Subjects</h4>
-                <div id="subjects-review-list" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); max-height: 280px; overflow-y: auto; background-color: var(--color-surface);">
-                  <div class="text-secondary py-8 text-center" style="font-size: var(--text-sm);">Loading subjects review...</div>
+              <div style="margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3);">
+                <h4 class="text-sm" style="font-weight: 600; margin-bottom: 2px; color: var(--color-text-primary);">Registered Examination Subjects</h4>
+                
+                <!-- Dynamic subject codes input area, visible only when registration is pending -->
+                <div id="subject-inputs-container" style="display: flex; gap: var(--space-2); align-items: flex-end; margin-bottom: 2px;">
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                    <label class="text-xs text-secondary" style="font-weight: 600; text-transform: uppercase;">Subject Code</label>
+                    <input type="text" id="input-subject-code" class="form-control" style="width: 100%; height: 38px;" placeholder="e.g. KCS301">
+                  </div>
+                  <div style="flex: 2; display: flex; flex-direction: column; gap: 4px;">
+                    <label class="text-xs text-secondary" style="font-weight: 600; text-transform: uppercase;">Subject Name</label>
+                    <input type="text" id="input-subject-name" class="form-control" style="width: 100%; height: 38px;" placeholder="e.g. Data Structures">
+                  </div>
+                  <button type="button" id="btn-add-subject" class="btn btn-secondary" style="height: 38px; padding: 0 var(--space-4); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+                    <span>Add</span>
+                  </button>
+                </div>
+                
+                <div id="subjects-review-list" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); max-height: 200px; overflow-y: auto; background-color: var(--color-surface); padding: 4px;">
+                  <div class="text-secondary py-8 text-center" style="font-size: var(--text-sm);">No subjects added yet. Add subjects above.</div>
                 </div>
               </div>
             </div>
@@ -445,13 +462,13 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: var(--text-sm); border-top: 1px dotted var(--color-border); padding-top: var(--space-2);">
                   <span class="text-secondary">Amount Due:</span>
-                  <strong style="color: var(--color-brand);">₹1,500.00</strong>
+                  <strong id="label-amount-due" style="color: var(--color-brand);">₹0.00</strong>
                 </div>
               </div>
 
               <button class="btn btn-primary" id="btn-open-payment" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-2); height: 42px;">
                 <span class="material-symbols-outlined" style="font-size: 20px;">payment</span>
-                <span>Proceed to Payment (₹1,500)</span>
+                <span id="label-btn-pay-text">Proceed to Payment (₹0)</span>
               </button>
               
               <button class="btn btn-secondary" id="btn-download-admit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-2); height: 42px;" disabled>
@@ -484,7 +501,7 @@
         
         <div class="amount-box" style="margin-bottom: var(--space-4);">
           <span>Amount Due for Semester Examination</span>
-          <div class="amount-display">₹1,500.00</div>
+          <div id="modal-amount-display" class="amount-display">₹0.00</div>
         </div>
 
         <h4 class="text-xs text-secondary" style="font-weight: 600; margin-bottom: var(--space-2); text-transform: uppercase; letter-spacing: 0.05em;">Select Payment Method</h4>
@@ -543,9 +560,9 @@
         <div id="pane-qr" class="tab-pane" style="margin-top: var(--space-3);">
           <div class="qr-section">
             <div class="qr-wrapper">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi%3A%2F%2Fpay%3Fpa%3Daktu%40smartcampus%26pn%3DAKTU%2520Controller%26am%3D1500%26cu%3DINR" alt="Payment QR Code">
+              <img id="qr-code-image" src="" alt="Payment QR Code">
             </div>
-            <p class="text-xs text-secondary">Scan using GPay, PhonePe, Paytm or BHIM to pay ₹1,500</p>
+            <p class="text-xs text-secondary">Scan using GPay, PhonePe, Paytm or BHIM to pay <span id="label-qr-amount">₹0</span></p>
           </div>
         </div>
         
@@ -553,7 +570,7 @@
       </div>
       <div class="payment-modal-footer">
         <button id="btn-cancel-payment" class="btn btn-secondary">Cancel</button>
-        <button id="btn-submit-exam" class="btn btn-primary">Authorize & Pay ₹1,500</button>
+        <button id="btn-submit-exam" class="btn btn-primary">Authorize & Pay <span id="label-btn-submit-amount">₹0</span></button>
       </div>
     </div>
   </div>
@@ -654,6 +671,84 @@
       paymentModal.style.display = 'none';
     });
 
+    let selectedSubjects = [];
+    let isRegistered = false;
+
+    function renderSubjects() {
+      const listDiv = document.getElementById('subjects-review-list');
+      const amountDueLabel = document.getElementById('label-amount-due');
+      const btnPayText = document.getElementById('label-btn-pay-text');
+      const modalAmountDisplay = document.getElementById('modal-amount-display');
+      const qrCodeImg = document.getElementById('qr-code-image');
+      const qrAmountText = document.getElementById('label-qr-amount');
+      const submitAmountLabel = document.getElementById('label-btn-submit-amount');
+
+      const amount = selectedSubjects.length * 500;
+      
+      amountDueLabel.innerText = `₹${amount.toLocaleString('en-IN')}.00`;
+      btnPayText.innerText = `Proceed to Payment (₹${amount.toLocaleString('en-IN')})`;
+      modalAmountDisplay.innerText = `₹${amount.toLocaleString('en-IN')}.00`;
+      qrAmountText.innerText = `₹${amount.toLocaleString('en-IN')}`;
+      submitAmountLabel.innerText = `₹${amount.toLocaleString('en-IN')}`;
+      
+      if (qrCodeImg) {
+        qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi%3A%2F%2Fpay%3Fpa%3Daktu%40smartcampus%26pn%3DAKTU%2520Controller%26am%3D${amount}%26cu%3DINR`;
+      }
+
+      if (selectedSubjects.length === 0) {
+        listDiv.innerHTML = '<div class="text-secondary py-8 text-center" style="font-size: var(--text-sm);">No subjects added yet. Add subjects above.</div>';
+        return;
+      }
+
+      listDiv.innerHTML = selectedSubjects.map((sub, idx) => {
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm);">
+            <div>
+              <strong style="color: var(--color-brand); font-family:var(--font-mono);">${sub.code}</strong> - ${sub.name}
+            </div>
+            ${!isRegistered ? `
+              <button type="button" class="btn-close-modal" onclick="removeSubject(${idx})" style="color: var(--color-danger); border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%;" title="Remove Subject">
+                <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+              </button>
+            ` : `
+              <div class="text-secondary" style="font-weight: 500; font-size:10px; padding: 2px 6px; background-color: var(--color-bg); border-radius: var(--radius-sm);">
+                Registered
+              </div>
+            `}
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.removeSubject = function(idx) {
+      if (isRegistered) return;
+      selectedSubjects.splice(idx, 1);
+      renderSubjects();
+    };
+
+    document.getElementById('btn-add-subject').addEventListener('click', () => {
+      if (isRegistered) return;
+      const codeInput = document.getElementById('input-subject-code');
+      const nameInput = document.getElementById('input-subject-name');
+      const code = codeInput.value.trim().toUpperCase();
+      const name = nameInput.value.trim();
+
+      if (!code || !name) {
+        alert("Please enter both Subject Code and Subject Name.");
+        return;
+      }
+
+      if (selectedSubjects.some(sub => sub.code === code)) {
+        alert("This subject code is already added.");
+        return;
+      }
+
+      selectedSubjects.push({ code, name });
+      codeInput.value = '';
+      nameInput.value = '';
+      renderSubjects();
+    });
+
     async function initExamPanel() {
       try {
         const res = await fetch('/api/students/profile', { headers: getAuthHeaders() });
@@ -666,59 +761,58 @@
         document.getElementById('header-avatar').textContent = initials;
       } catch(e) {}
       checkExamRegistrationStatus();
-      loadRegisteredSubjects();
     }
 
     async function checkExamRegistrationStatus() {
       try {
         const res = await fetch('/api/exams/results', { headers: getAuthHeaders() });
         if (res.ok) {
+          const results = await res.json();
+          isRegistered = true;
           btnDownloadAdmit.disabled = false;
           btnOpenPayment.style.display = 'none';
           document.getElementById('label-reg-status').innerText = 'PAID & REGISTERED';
           document.getElementById('label-reg-status').style.color = 'var(--color-success)';
           document.getElementById('main-status-message').innerHTML = '<span style="color:var(--color-success); font-weight:600;">✓ Exam registration is fully completed.</span>';
+          
+          document.getElementById('subject-inputs-container').style.display = 'none';
+
+          if (results.registeredSubjects) {
+            selectedSubjects = results.registeredSubjects.split('|').map(item => {
+              const parts = item.split(':');
+              return { code: parts[0], name: parts[1] || '' };
+            });
+          } else {
+            selectedSubjects = [];
+          }
+          renderSubjects();
         } else {
-          btnDownloadAdmit.disabled = true;
+          isRegistered = false;
+          btnDownloadAdmit.disabled = false;
           btnOpenPayment.style.display = 'flex';
           document.getElementById('label-reg-status').innerText = 'PENDING PAYMENT';
           document.getElementById('label-reg-status').style.color = 'var(--color-warning)';
-        }
-      } catch (e) {}
-    }
-
-    async function loadRegisteredSubjects() {
-      const listDiv = document.getElementById('subjects-review-list');
-      try {
-        const resProfile = await fetch('/api/students/profile', { headers: getAuthHeaders() });
-        const p = await resProfile.json();
-        
-        const resCourses = await fetch('/api/students/courses', { headers: getAuthHeaders() });
-        const courses = await resCourses.json();
-        
-        if (courses.length > 0) {
-          // Filter matching the student's semester to review 6 theory and 4 labs
-          const semCourses = courses.filter(c => c.code.contains(String(p.semester)));
-          if (semCourses.length > 0) {
-            listDiv.innerHTML = semCourses.map(c => {
-              const isLab = c.code.includes('5') && c.code.endsWith('1') || c.code.includes('3') && c.code.endsWith('1') || c.code.includes('2') || c.code.includes('3') ? false : true;
-              return `
-                <div style="display: flex; justify-content: space-between; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm);">
-                  <div>
-                    <strong style="color: var(--color-brand); font-family:var(--font-mono);">${c.code}</strong> - ${c.title}
-                  </div>
-                  <div class="text-secondary" style="font-weight: 500; font-size:11px; padding: 2px 6px; background-color: var(--color-bg); border-radius: var(--radius-sm);">
-                    ${isLab ? 'Practical Lab' : 'Theory Course'}
-                  </div>
-                </div>
-              `;
-            }).join('');
-            return;
+          
+          document.getElementById('subject-inputs-container').style.display = 'flex';
+          
+          // Pre-populate with student's current semester subjects as helper if empty
+          if (selectedSubjects.length === 0) {
+            try {
+              const resProfile = await fetch('/api/students/profile', { headers: getAuthHeaders() });
+              const p = await resProfile.json();
+              const resCourses = await fetch('/api/students/courses', { headers: getAuthHeaders() });
+              const courses = await resCourses.json();
+              if (courses.length > 0) {
+                const semCourses = courses.filter(c => c.code.includes(String(p.semester)));
+                selectedSubjects = semCourses.map(c => ({ code: c.code, name: c.title }));
+              }
+            } catch(e) {}
           }
+          renderSubjects();
         }
-        listDiv.innerHTML = '<div class="text-secondary py-8 text-center" style="font-size: var(--text-sm);">No semester subjects found to review.</div>';
-      } catch(e) {
-        listDiv.innerHTML = '<div class="text-secondary py-8 text-center" style="font-size: var(--text-sm); color:var(--color-danger);">Unable to load registered subjects review.</div>';
+      } catch (e) {
+        isRegistered = false;
+        renderSubjects();
       }
     }
 
@@ -740,12 +834,33 @@
       });
     });
 
+    btnOpenPayment.addEventListener('click', () => {
+      const candidateName = examCandidateInput.value.trim();
+      if (!candidateName) {
+        alert("Please enter candidate name before proceeding to payment.");
+        return;
+      }
+      if (selectedSubjects.length === 0) {
+        alert("Please add at least one subject code to register.");
+        return;
+      }
+      // Prefill cardholder name inside modal
+      document.getElementById('card-holder-name').value = candidateName;
+      paymentModal.style.display = 'flex';
+      examStatusMsg.innerText = '';
+    });
+
     btnSubmitExam.addEventListener('click', async () => {
       const candidateName = examCandidateInput.value.trim();
       const examId = document.getElementById('exam-session-id').value;
 
       if (!candidateName) {
         alert("Please enter candidate name");
+        return;
+      }
+
+      if (selectedSubjects.length === 0) {
+        alert("Please add at least one subject to register");
         return;
       }
 
@@ -767,8 +882,8 @@
           return;
         }
       } else if (activePaymentTab === 'qr') {
-        // Scan QR code confirmation check
-        const confirmScan = confirm("Have you successfully scanned the QR code and processed the ₹1,500 payment?");
+        const amount = selectedSubjects.length * 500;
+        const confirmScan = confirm(`Have you successfully scanned the QR code and processed the ₹${amount.toLocaleString('en-IN')} payment?`);
         if (!confirmScan) {
           return;
         }
@@ -778,11 +893,13 @@
       examStatusMsg.style.color = "var(--color-text-secondary)";
       examStatusMsg.innerText = "Securing transaction with payment gateway...";
 
+      const subjectDetails = selectedSubjects.map(s => `${s.code}:${s.name}`).join('|');
+
       try {
         const res = await fetch('/api/exams/form/submit', {
           method: 'POST',
           headers: getAuthHeaders(),
-          body: JSON.stringify({ examId, candidateName })
+          body: JSON.stringify({ examId, candidateName, subjectDetails })
         });
         if (res.ok) {
           examStatusMsg.style.color = "var(--color-success)";

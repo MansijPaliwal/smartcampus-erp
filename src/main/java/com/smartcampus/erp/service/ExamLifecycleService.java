@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 public interface ExamLifecycleService {
-    ExamForm submitExamFormAndPay(Long studentUserId, String examId, String candidateName, BigDecimal amount);
+    ExamForm submitExamFormAndPay(Long studentUserId, String examId, String candidateName, BigDecimal amount, String subjectDetails);
     byte[] generateAdmitCardPdf(Long studentUserId);
     Map<String, Object> getAcademicResults(Long studentUserId);
 }

@@ -32,6 +32,9 @@ public class ExamForm {
     @Column(name = "exam_center")
     private String examCenter;
 
+    @Column(name = "subject_details", length = 2000)
+    private String subjectDetails;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_profile_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore

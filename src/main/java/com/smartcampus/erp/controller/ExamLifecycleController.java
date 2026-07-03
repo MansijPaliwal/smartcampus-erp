@@ -29,16 +29,24 @@ public class ExamLifecycleController {
     @Operation(summary = "Submit exam registration form and execute billing ledger check")
     public ResponseEntity<ExamForm> submitForm(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestBody Map<String, String> payload) {
+            @RequestBody Map<String, Object> payload) {
         
-        String examId = payload.getOrDefault("examId", "EXAM-MAIN-2026");
-        String candidateName = payload.getOrDefault("candidateName", userPrincipal.getUser().getName());
+        String examId = (String) payload.getOrDefault("examId", "EXAM-MAIN-2026");
+        String candidateName = (String) payload.getOrDefault("candidateName", userPrincipal.getUser().getName());
+        String subjectDetails = (String) payload.getOrDefault("subjectDetails", "");
+
+        int subjectsCount = 0;
+        if (subjectDetails != null && !subjectDetails.trim().isEmpty()) {
+            subjectsCount = subjectDetails.split("\\|").length;
+        }
+        BigDecimal amount = BigDecimal.valueOf(subjectsCount * 500.00);
 
         ExamForm form = examLifecycleService.submitExamFormAndPay(
                 userPrincipal.getId(),
                 examId,
                 candidateName,
-                BigDecimal.valueOf(1500.00)
+                amount,
+                subjectDetails
         );
         return ResponseEntity.ok(form);
     }

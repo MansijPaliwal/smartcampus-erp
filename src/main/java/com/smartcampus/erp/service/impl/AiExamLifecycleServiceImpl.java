@@ -45,9 +45,11 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
 
     @Override
     @Transactional
-    public ExamForm submitExamFormAndPay(Long studentUserId, String examId, String candidateName, BigDecimal amount) {
+    public ExamForm submitExamFormAndPay(Long studentUserId, String examId, String candidateName, BigDecimal amount,
+            String subjectDetails) {
         StudentProfile studentProfile = studentProfileRepository.findById(studentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
 
         // Create transaction details
         String txId = "TX-EXAM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -62,6 +64,7 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
                 .allocatedExamDate(examDate)
                 .examCenter(center)
                 .studentProfile(studentProfile)
+                .subjectDetails(subjectDetails)
                 .build();
 
         return examFormRepository.save(form);
@@ -69,8 +72,10 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
 
     @Override
     public byte[] generateAdmitCardPdf(Long studentUserId) {
-        ExamForm form = examFormRepository.findFirstByStudentProfileIdAndPaymentStatusOrderByIdDesc(studentUserId, "PAID")
-                .orElseThrow(() -> new ResourceNotFoundException("No paid exam form registrations found for this student."));
+        ExamForm form = examFormRepository
+                .findFirstByStudentProfileIdAndPaymentStatusOrderByIdDesc(studentUserId, "PAID")
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("No paid exam form registrations found for this student."));
 
         StudentProfile profile = form.getStudentProfile();
 
@@ -134,14 +139,30 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
             scheduleTable.addCell(createCell("Exam Center Session", boldFont));
             scheduleTable.addCell(createCell("Timing", boldFont));
 
-            // Load courses according to student's semester to display matching schedule
-            List<Course> courses = courseRepository.findByDepartment(profile.getDepartment());
-            for (Course course : courses) {
-                if (course.getCode().contains(String.valueOf(profile.getSemester()))) {
-                    scheduleTable.addCell(createCell(course.getCode(), normalFont));
-                    scheduleTable.addCell(createCell(course.getTitle(), normalFont));
+            // Load courses from the saved subjectDetails instead of querying all department
+            // courses
+            String subjectDetails = form.getSubjectDetails();
+            if (subjectDetails != null && !subjectDetails.trim().isEmpty()) {
+                String[] subjects = subjectDetails.split("\\|");
+                for (String subj : subjects) {
+                    String[] parts = subj.split(":", 2);
+                    String code = parts[0].trim();
+                    String name = parts.length > 1 ? parts[1].trim() : "";
+
+                    scheduleTable.addCell(createCell(code, normalFont));
+                    scheduleTable.addCell(createCell(name, normalFont));
                     scheduleTable.addCell(createCell("Main Exam Block", normalFont));
                     scheduleTable.addCell(createCell("09:30 AM - 12:30 PM", normalFont));
+                }
+            } else {
+                List<Course> courses = courseRepository.findByDepartment(profile.getDepartment());
+                for (Course course : courses) {
+                    if (course.getCode().contains(String.valueOf(profile.getSemester()))) {
+                        scheduleTable.addCell(createCell(course.getCode(), normalFont));
+                        scheduleTable.addCell(createCell(course.getTitle(), normalFont));
+                        scheduleTable.addCell(createCell("Main Exam Block", normalFont));
+                        scheduleTable.addCell(createCell("09:30 AM - 12:30 PM", normalFont));
+                    }
                 }
             }
 
@@ -157,10 +178,16 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
     @Override
     public Map<String, Object> getAcademicResults(Long studentUserId) {
         StudentProfile profile = studentProfileRepository.findById(studentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
+
+        // Verify that a paid exam form exists for this student
+        examFormRepository.findFirstByStudentProfileIdAndPaymentStatusOrderByIdDesc(studentUserId, "PAID")
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("No paid exam form registrations found for this student."));
 
         List<Marks> marksList = marksRepository.findByStudentId(studentUserId);
-        
+
         List<Map<String, Object>> subjectGrades = new ArrayList<>();
         BigDecimal totalPoints = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
@@ -198,6 +225,12 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
         results.put("subjects", subjectGrades);
         results.put("cgpa", aggregateCpa);
 
+        Optional<ExamForm> examFormOpt = examFormRepository
+                .findFirstByStudentProfileIdAndPaymentStatusOrderByIdDesc(studentUserId, "PAID");
+        if (examFormOpt.isPresent()) {
+            results.put("registeredSubjects", examFormOpt.get().getSubjectDetails());
+        }
+
         return results;
     }
 
@@ -208,22 +241,33 @@ public class AiExamLifecycleServiceImpl implements ExamLifecycleService {
     }
 
     private String getLetterGrade(double percentage) {
-        if (percentage >= 90.0) return "O"; // Outstanding
-        if (percentage >= 80.0) return "A+"; // Excellent
-        if (percentage >= 70.0) return "A";
-        if (percentage >= 60.0) return "B+";
-        if (percentage >= 50.0) return "B";
+        if (percentage >= 90.0)
+            return "A+"; // Outstanding
+        if (percentage >= 80.0)
+            return "A"; // Excellent
+        if (percentage >= 70.0)
+            return "B+";
+        if (percentage >= 60.0)
+            return "B";
+        if (percentage >= 50.0)
+            return "C";
         return "C";
     }
 
     private int getGradePoints(String grade) {
         switch (grade) {
-            case "O": return 10;
-            case "A+": return 9;
-            case "A": return 8;
-            case "B+": return 7;
-            case "B": return 6;
-            default: return 5;
+            case "A+":
+                return 10;
+            case "A":
+                return 9;
+            case "B+":
+                return 8;
+            case "B":
+                return 7;
+            case "C":
+                return 6;
+            default:
+                return 5;
         }
     }
 }
