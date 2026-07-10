@@ -140,13 +140,13 @@ First, register a user using `/api/auth/register`, or use the pre-filled dashboa
 ---
 
 ## Portfolio Screenshots
-*(Screenshots showing UI designs will be added below)*
-* **Swagger UI Documentation**:
-  ![Swagger UI Placeholder](https://via.placeholder.com/1000x500/1e293b/ffffff?text=Swagger+UI+Documentation)
-* **Interactive Admin Dashboard**:
-  ![Admin Dashboard Placeholder](https://via.placeholder.com/1000x500/1e293b/ffffff?text=Glassmorphic+Admin+Dashboard)
-* **Postman API Test**:
-  ![Postman Placeholder](https://via.placeholder.com/1000x500/1e293b/ffffff?text=Postman+Collection+Execution)
+
+* **Portal Login Page**:
+  ![Portal Login Page](assets/screenshots/login_interface.png)
+* **Interactive Glassmorphic Admin Dashboard**:
+  ![Admin Dashboard](assets/screenshots/admin_dashboard.png)
+* **Student Portal & Integrated Campus Assistant Chatbot**:
+  ![Student Portal and Chatbot](assets/screenshots/student_portal_chatbot.png)
 
 ---
 
