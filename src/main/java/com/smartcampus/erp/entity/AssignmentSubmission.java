@@ -34,4 +34,13 @@ public class AssignmentSubmission {
 
     @Column(name = "marks_obtained")
     private BigDecimal marksObtained;
+
+    @Column(name = "integrity_score")
+    private Integer integrityScore;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @Column(name = "completion_time_seconds")
+    private Integer completionTimeSeconds;
 }

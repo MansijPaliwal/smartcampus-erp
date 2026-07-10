@@ -6,18 +6,23 @@ import com.smartcampus.erp.dto.FeePaymentResponse;
 import com.smartcampus.erp.entity.FeePayment;
 import com.smartcampus.erp.entity.PaymentStatus;
 import com.smartcampus.erp.entity.StudentProfile;
+import com.smartcampus.erp.entity.TransactionLedger;
 import com.smartcampus.erp.exception.BadRequestException;
 import com.smartcampus.erp.exception.ResourceNotFoundException;
 import com.smartcampus.erp.exception.UnauthorizedException;
 import com.smartcampus.erp.repository.FeePaymentRepository;
 import com.smartcampus.erp.repository.StudentProfileRepository;
+import com.smartcampus.erp.repository.TransactionLedgerRepository;
 import com.smartcampus.erp.service.FeePaymentService;
 import com.smartcampus.erp.service.NotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.transaction.annotation.Isolation;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,13 +31,16 @@ public class FeePaymentServiceImpl implements FeePaymentService {
 
     private final FeePaymentRepository feePaymentRepository;
     private final StudentProfileRepository studentProfileRepository;
+    private final TransactionLedgerRepository transactionLedgerRepository;
     private final NotificationService notificationService;
 
     public FeePaymentServiceImpl(FeePaymentRepository feePaymentRepository,
                                  StudentProfileRepository studentProfileRepository,
+                                 TransactionLedgerRepository transactionLedgerRepository,
                                  NotificationService notificationService) {
         this.feePaymentRepository = feePaymentRepository;
         this.studentProfileRepository = studentProfileRepository;
+        this.transactionLedgerRepository = transactionLedgerRepository;
         this.notificationService = notificationService;
     }
 
@@ -49,6 +57,9 @@ public class FeePaymentServiceImpl implements FeePaymentService {
                 .build();
 
         FeePayment saved = feePaymentRepository.save(feePayment);
+
+        // Record entry in the TransactionLedger: DEBIT tuition fee
+        writeLedgerEntry(student, request.getAmount(), BigDecimal.ZERO, "Tuition Fee Due Created");
 
         // Notify Student
         String msg = String.format("A new tuition fee due of %.2f has been registered on your account.", request.getAmount().doubleValue());
@@ -94,6 +105,9 @@ public class FeePaymentServiceImpl implements FeePaymentService {
 
         FeePayment saved = feePaymentRepository.save(feePayment);
 
+        // Record entry in the TransactionLedger: CREDIT payment
+        writeLedgerEntry(feePayment.getStudent(), BigDecimal.ZERO, feePayment.getAmount(), "Tuition Fee Paid - " + txId);
+
         // Notify Student
         String msg = String.format("Your payment of %.2f has been successfully recorded under Transaction ID: %s.",
                 saved.getAmount().doubleValue(), saved.getTransactionId());
@@ -108,6 +122,108 @@ public class FeePaymentServiceImpl implements FeePaymentService {
         return feePaymentRepository.findAll().stream()
                 .map(this::mapToFeePaymentResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public void processPaymentWebhook(Map<String, Object> payload) {
+        if (!payload.containsKey("paymentId")) {
+            throw new BadRequestException("Webhook payload missing paymentId field");
+        }
+
+        Long paymentId;
+        Object rawPaymentId = payload.get("paymentId");
+        if (rawPaymentId instanceof Number) {
+            paymentId = ((Number) rawPaymentId).longValue();
+        } else {
+            paymentId = Long.valueOf(rawPaymentId.toString());
+        }
+
+        String transactionId = (String) payload.getOrDefault("transactionId", "TXN-WEB-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        String statusStr = (String) payload.getOrDefault("status", "SUCCESS");
+
+        FeePayment feePayment = feePaymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee payment record not found for ID: " + paymentId));
+
+        if (feePayment.getStatus() == PaymentStatus.PAID) {
+            // Deduplicate: already paid
+            return;
+        }
+
+        if ("SUCCESS".equalsIgnoreCase(statusStr)) {
+            feePayment.setStatus(PaymentStatus.PAID);
+            feePayment.setPaymentDate(LocalDateTime.now());
+            feePayment.setTransactionId(transactionId);
+            feePayment.setPaymentMethod("WEBHOOK");
+            feePaymentRepository.save(feePayment);
+
+            // Record entry in the TransactionLedger: CREDIT payment
+            writeLedgerEntry(feePayment.getStudent(), BigDecimal.ZERO, feePayment.getAmount(), 
+                    "Tuition Fee Paid (Webhook) - Transaction ID: " + transactionId);
+
+            // Notify Student
+            String msg = String.format("Your payment of %.2f has been successfully recorded via Webhook under Transaction ID: %s.",
+                    feePayment.getAmount().doubleValue(), transactionId);
+            notificationService.createNotification(feePayment.getStudent().getId(), "Payment Successful (Webhook)", msg);
+
+        } else if ("FAILED".equalsIgnoreCase(statusStr)) {
+            feePayment.setStatus(PaymentStatus.FAILED);
+            feePaymentRepository.save(feePayment);
+
+            // Notify Student of failure
+            String msg = String.format("Your payment attempt of %.2f has failed.", feePayment.getAmount().doubleValue());
+            notificationService.createNotification(feePayment.getStudent().getId(), "Payment Failed (Webhook)", msg);
+        }
+    }
+
+    private void writeLedgerEntry(StudentProfile student, BigDecimal debit, BigDecimal credit, String description) {
+        Optional<TransactionLedger> latestOpt = transactionLedgerRepository.findFirstByStudentIdOrderByIdDesc(student.getId());
+        BigDecimal previousBalance = BigDecimal.ZERO;
+        String previousHash = "0000000000000000000000000000000000000000000000000000000000000000";
+
+        if (latestOpt.isPresent()) {
+            previousBalance = latestOpt.get().getBalance();
+            previousHash = latestOpt.get().getCurrentHash();
+        }
+
+        // Double-entry running balance rule: balance = previousBalance + debit - credit
+        BigDecimal balance = previousBalance.add(debit).subtract(credit);
+
+        TransactionLedger entry = TransactionLedger.builder()
+                .student(student)
+                .debit(debit)
+                .credit(credit)
+                .balance(balance)
+                .description(description)
+                .createdAt(LocalDateTime.now())
+                .previousHash(previousHash)
+                .build();
+
+        // Calculate cryptographic current hash of the row for ledger auditing and block verification
+        String hashInput = String.format("%d|%s|%s|%s|%s|%s|%s",
+                student.getId(),
+                debit.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(),
+                credit.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(),
+                balance.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(),
+                description,
+                entry.getCreatedAt().toString(),
+                previousHash);
+        
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(hashInput.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            entry.setCurrentHash(hexString.toString());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute cryptographic ledger row hash", e);
+        }
+
+        transactionLedgerRepository.save(entry);
     }
 
     private FeePaymentResponse mapToFeePaymentResponse(FeePayment payment) {

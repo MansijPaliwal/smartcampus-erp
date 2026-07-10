@@ -3,6 +3,23 @@ spring:
     name: smartcampus-erp
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:h2}
+  autoconfigure:
+    exclude: org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
+  main:
+    allow-bean-definition-overriding: true
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        model: gpt-4o-mini
+      connection-timeout: 10s
+      read-timeout: 10s
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 500ms
+        max-interval: 2s
+        multiplier: 2.0
   servlet:
     multipart:
       max-file-size: 5MB

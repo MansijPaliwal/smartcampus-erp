@@ -16,6 +16,9 @@ spring:
   mail:
     host: localhost
     port: 3025
+  ai:
+    openai:
+      api-key: mock-openai-key-for-testing
 
 app:
   jwt:

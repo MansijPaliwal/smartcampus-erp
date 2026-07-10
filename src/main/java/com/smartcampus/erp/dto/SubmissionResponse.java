@@ -21,4 +21,5 @@ public class SubmissionResponse {
     private String fileUrl;
     private LocalDateTime submittedAt;
     private BigDecimal marksObtained;
+    private Integer integrityScore;
 }

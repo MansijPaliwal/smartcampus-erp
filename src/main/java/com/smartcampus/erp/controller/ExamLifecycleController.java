@@ -2,27 +2,30 @@ package com.smartcampus.erp.controller;
 
 import com.smartcampus.erp.entity.ExamForm;
 import com.smartcampus.erp.security.UserPrincipal;
+import com.smartcampus.erp.service.ExamAnalyticsService;
 import com.smartcampus.erp.service.ExamLifecycleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/exams")
-@Tag(name = "Exam Lifecycle Manager", description = "Endpoints for student exam form submissions, payment matching, dynamic PDF admit cards, and AKTU markbook results")
+@Tag(name = "Exam Lifecycle Manager", description = "Endpoints for student exam form submissions, payment matching, dynamic PDF admit cards, and predictive exam analytics")
 public class ExamLifecycleController {
 
     private final ExamLifecycleService examLifecycleService;
+    private final ExamAnalyticsService examAnalyticsService;
 
-    public ExamLifecycleController(ExamLifecycleService examLifecycleService) {
+    public ExamLifecycleController(ExamLifecycleService examLifecycleService, ExamAnalyticsService examAnalyticsService) {
         this.examLifecycleService = examLifecycleService;
+        this.examAnalyticsService = examAnalyticsService;
     }
 
     @PostMapping("/form/submit")
@@ -67,5 +70,13 @@ public class ExamLifecycleController {
     public ResponseEntity<Map<String, Object>> getResults(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         Map<String, Object> results = examLifecycleService.getAcademicResults(userPrincipal.getId());
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/analytics/student/{studentId}")
+    @PreAuthorize("hasRole('FACULTY')")
+    @Operation(summary = "Get student predictive performance analytics trends", description = "Aggregates exam marks and class attendance metrics to calculate predictive risk classification and score estimation.")
+    public ResponseEntity<Map<String, Object>> getStudentAnalytics(@PathVariable Long studentId) {
+        Map<String, Object> trends = examAnalyticsService.calculateStudentPerformanceTrends(studentId);
+        return ResponseEntity.ok(trends);
     }
 }

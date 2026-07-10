@@ -9,10 +9,10 @@ import com.smartcampus.erp.repository.*;
 import com.smartcampus.erp.service.AssignmentService;
 import com.smartcampus.erp.service.FileStorageService;
 import com.smartcampus.erp.service.NotificationService;
+import com.smartcampus.erp.service.ProctoringService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +28,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
+    private final ProctoringService proctoringService;
 
     public AssignmentServiceImpl(AssignmentRepository assignmentRepository,
                                  AssignmentSubmissionRepository submissionRepository,
@@ -35,7 +36,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                                  StudentProfileRepository studentProfileRepository,
                                  EnrollmentRepository enrollmentRepository,
                                  FileStorageService fileStorageService,
-                                 NotificationService notificationService) {
+                                 NotificationService notificationService,
+                                 ProctoringService proctoringService) {
         this.assignmentRepository = assignmentRepository;
         this.submissionRepository = submissionRepository;
         this.courseRepository = courseRepository;
@@ -43,6 +45,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         this.enrollmentRepository = enrollmentRepository;
         this.fileStorageService = fileStorageService;
         this.notificationService = notificationService;
+        this.proctoringService = proctoringService;
     }
 
     @Override
@@ -80,7 +83,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     @Transactional
-    public SubmissionResponse submitAssignment(Long studentUserId, Long assignmentId, MultipartFile file) {
+    public SubmissionResponse submitAssignment(Long studentUserId, Long assignmentId, MultipartFile file, String ipAddress, Integer completionTimeSeconds) {
         StudentProfile student = studentProfileRepository.findById(studentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
 
@@ -105,16 +108,23 @@ public class AssignmentServiceImpl implements AssignmentService {
             submission = existingOpt.get();
             submission.setFileUrl(uniqueFileName);
             submission.setSubmittedAt(LocalDateTime.now());
+            submission.setIpAddress(ipAddress);
+            submission.setCompletionTimeSeconds(completionTimeSeconds);
         } else {
             submission = AssignmentSubmission.builder()
                     .assignment(assignment)
                     .student(student)
                     .fileUrl(uniqueFileName)
                     .submittedAt(LocalDateTime.now())
+                    .ipAddress(ipAddress)
+                    .completionTimeSeconds(completionTimeSeconds)
                     .build();
         }
 
+        // Save submission and run the automated proctoring analysis
         AssignmentSubmission saved = submissionRepository.save(submission);
+        proctoringService.analyzeSubmissionIntegrity(saved);
+
         return mapToSubmissionResponse(saved);
     }
 
@@ -195,6 +205,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .fileUrl(submission.getFileUrl())
                 .submittedAt(submission.getSubmittedAt())
                 .marksObtained(submission.getMarksObtained())
+                .integrityScore(submission.getIntegrityScore())
                 .build();
     }
 }

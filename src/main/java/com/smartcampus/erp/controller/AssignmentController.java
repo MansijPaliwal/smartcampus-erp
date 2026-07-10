@@ -6,6 +6,7 @@ import com.smartcampus.erp.service.AssignmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 
 @RestController
@@ -49,14 +49,28 @@ public class AssignmentController {
 
     @PostMapping(value = "/{assignmentId}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('STUDENT')")
-    @Operation(summary = "Submit an assignment", description = "Upload a solution file (max 5MB, PDF/DOCX/ZIP) for an assignment.")
+    @Operation(summary = "Submit an assignment", description = "Upload a solution file (max 5MB, PDF/DOCX/ZIP) for an assignment with automated proctoring tracking.")
     @ApiResponse(responseCode = "200", description = "Successfully submitted assignment")
     @ApiResponse(responseCode = "400", description = "File size exceeds 5MB or invalid file type")
     public ResponseEntity<SubmissionResponse> submitAssignment(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long assignmentId,
-            @RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(assignmentService.submitAssignment(userPrincipal.getId(), assignmentId, file));
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "completionTimeSeconds", required = false) Integer completionTimeSeconds,
+            HttpServletRequest request) {
+        
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        return ResponseEntity.ok(assignmentService.submitAssignment(
+                userPrincipal.getId(), 
+                assignmentId, 
+                file, 
+                ipAddress, 
+                completionTimeSeconds
+        ));
     }
 
     @PostMapping("/submissions/{submissionId}/grade")
