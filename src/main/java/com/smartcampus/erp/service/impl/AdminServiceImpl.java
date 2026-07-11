@@ -28,6 +28,7 @@ public class AdminServiceImpl implements AdminService {
     private final CourseRepository courseRepository;
     private final FeePaymentRepository feePaymentRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final NotificationRepository notificationRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AdminServiceImpl(UserRepository userRepository,
@@ -36,6 +37,7 @@ public class AdminServiceImpl implements AdminService {
                             CourseRepository courseRepository,
                             FeePaymentRepository feePaymentRepository,
                             EnrollmentRepository enrollmentRepository,
+                            NotificationRepository notificationRepository,
                             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.studentProfileRepository = studentProfileRepository;
@@ -43,6 +45,7 @@ public class AdminServiceImpl implements AdminService {
         this.courseRepository = courseRepository;
         this.feePaymentRepository = feePaymentRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.notificationRepository = notificationRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -495,22 +498,23 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public AdminDashboardStatsResponse getDashboardStats() {
-        long studentCount = studentProfileRepository.count();
-        long facultyCount = facultyProfileRepository.count();
-        long courseCount = courseRepository.count();
+        long totalStudents = studentProfileRepository.count();
+        java.math.BigDecimal totalPendingFees = feePaymentRepository.sumAmountByStatus(PaymentStatus.PENDING);
 
-        List<FeePayment> pendingPayments = feePaymentRepository.findAll().stream()
-                .filter(p -> p.getStatus() == PaymentStatus.PENDING)
+        List<NotificationDto> recentAlerts = notificationRepository.findTop3ByOrderByCreatedAtDesc().stream()
+                .map(n -> NotificationDto.builder()
+                        .id(n.getId())
+                        .title(n.getTitle())
+                        .message(n.getMessage())
+                        .isRead(n.isRead())
+                        .createdAt(n.getCreatedAt())
+                        .build())
                 .collect(Collectors.toList());
-        java.math.BigDecimal totalPendingFees = pendingPayments.stream()
-                .map(FeePayment::getAmount)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
         return AdminDashboardStatsResponse.builder()
-                .studentCount(studentCount)
-                .facultyCount(facultyCount)
-                .courseCount(courseCount)
+                .totalStudents(totalStudents)
                 .totalPendingFees(totalPendingFees)
+                .recentAlerts(recentAlerts)
                 .build();
     }
 

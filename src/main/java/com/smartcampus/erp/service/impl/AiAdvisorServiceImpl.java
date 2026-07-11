@@ -7,11 +7,13 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,30 +59,25 @@ public class AiAdvisorServiceImpl implements AiAdvisorService {
     @Override
     public String advise(String query) {
         try {
-            // Retrieve contextual documents using vector store similarity search
+            // Retrieve contextual documents using vector store similarity search (top 3)
             List<Document> documents = vectorStore.similaritySearch(
                     SearchRequest.query(query)
-                            .withTopK(4)
-                            .withSimilarityThreshold(0.5)
+                            .withTopK(3)
             );
             
             String context = documents.stream()
                     .map(Document::getContent)
                     .collect(Collectors.joining("\n\n"));
             
-            // Build RAG-specific instructions forcing the LLM to ground replies in context only
-            String systemInstruction = 
-                    "You are the official academic and campus advisor for SmartCampus ERP.\n" +
-                    "Use ONLY the following context to answer the student's question.\n" +
-                    "If the answer is not contained in the context, say: \"I'm sorry, I cannot find that information in our campus rulebooks or syllabi.\"\n" +
-                    "Do not make up facts or hallucinate answers outside this context.\n\n" +
+            // Build RAG-specific instructions forcing the LLM to ground replies in context only using PromptTemplate
+            PromptTemplate promptTemplate = new PromptTemplate(
+                    "You are a campus advisor. Answer ONLY using the provided Context. If the answer is not in the context, say 'I do not have official documentation on this.'\n\n" +
                     "Context:\n" +
-                    context;
+                    "{context}\n\n" +
+                    "User Query: {query}"
+            );
             
-            Prompt prompt = new Prompt(List.of(
-                    new SystemMessage(systemInstruction),
-                    new UserMessage(query)
-            ));
+            Prompt prompt = promptTemplate.create(Map.of("context", context, "query", query));
             
             return chatModel.call(prompt).getResult().getOutput().getContent();
         } catch (Exception e) {

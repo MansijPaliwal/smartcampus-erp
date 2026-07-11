@@ -47,6 +47,26 @@ public class GpaServiceImpl implements GpaService {
      *    GPA = Sum(Grade Point * Course Credits) / Sum(Course Credits)
      *    If the sum of course credits is 0, GPA defaults to 0.0.
      */
+    private record GradeInfo(String letterGrade, int gradePoint) {}
+
+    private GradeInfo determineGrade(double pct) {
+        if (pct >= 90.0) {
+            return new GradeInfo("O", 10);
+        } else if (pct >= 80.0) {
+            return new GradeInfo("A+", 9);
+        } else if (pct >= 70.0) {
+            return new GradeInfo("A", 8);
+        } else if (pct >= 60.0) {
+            return new GradeInfo("B+", 7);
+        } else if (pct >= 50.0) {
+            return new GradeInfo("B", 6);
+        } else if (pct >= 40.0) {
+            return new GradeInfo("C", 5);
+        } else {
+            return new GradeInfo("F", 0);
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public GpaResponse calculateGpa(Long studentUserId) {
@@ -54,7 +74,7 @@ public class GpaServiceImpl implements GpaService {
             throw new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId);
         }
 
-        List<Marks> allMarks = marksRepository.findByStudentId(studentUserId);
+        var allMarks = marksRepository.findByStudentId(studentUserId);
         if (allMarks.isEmpty()) {
             return GpaResponse.builder()
                     .studentId(studentUserId)
@@ -64,58 +84,35 @@ public class GpaServiceImpl implements GpaService {
         }
 
         // Group by course ID
-        Map<Course, List<Marks>> marksByCourse = allMarks.stream()
+        var marksByCourse = allMarks.stream()
                 .collect(Collectors.groupingBy(Marks::getCourse));
 
-        List<CourseGradeDto> courseGrades = new ArrayList<>();
-        java.math.BigDecimal totalWeightedGradePoints = java.math.BigDecimal.ZERO;
-        int totalCredits = 0;
+        var courseGrades = new ArrayList<CourseGradeDto>();
+        var totalWeightedGradePoints = java.math.BigDecimal.ZERO;
+        var totalCredits = 0;
 
-        for (Map.Entry<Course, List<Marks>> entry : marksByCourse.entrySet()) {
-            Course course = entry.getKey();
-            List<Marks> courseMarks = entry.getValue();
+        for (var entry : marksByCourse.entrySet()) {
+            var course = entry.getKey();
+            var courseMarks = entry.getValue();
 
-            java.math.BigDecimal totalObtained = courseMarks.stream()
+            var totalObtained = courseMarks.stream()
                     .map(Marks::getMarksObtained)
                     .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-            java.math.BigDecimal totalMax = courseMarks.stream()
+            var totalMax = courseMarks.stream()
                     .map(Marks::getMaxMarks)
                     .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
-            java.math.BigDecimal percentage = java.math.BigDecimal.ZERO;
+            var percentage = java.math.BigDecimal.ZERO;
             if (totalMax.compareTo(java.math.BigDecimal.ZERO) > 0) {
                 percentage = totalObtained.divide(totalMax, 4, java.math.RoundingMode.HALF_UP)
                         .multiply(java.math.BigDecimal.valueOf(100));
             }
 
-            String letterGrade;
-            int gradePoint;
+            var gradeInfo = determineGrade(percentage.doubleValue());
+            var letterGrade = gradeInfo.letterGrade();
+            var gradePoint = gradeInfo.gradePoint();
 
-            double pctDouble = percentage.doubleValue();
-            if (pctDouble >= 90.0) {
-                letterGrade = "O";
-                gradePoint = 10;
-            } else if (pctDouble >= 80.0) {
-                letterGrade = "A+";
-                gradePoint = 9;
-            } else if (pctDouble >= 70.0) {
-                letterGrade = "A";
-                gradePoint = 8;
-            } else if (pctDouble >= 60.0) {
-                letterGrade = "B+";
-                gradePoint = 7;
-            } else if (pctDouble >= 50.0) {
-                letterGrade = "B";
-                gradePoint = 6;
-            } else if (pctDouble >= 40.0) {
-                letterGrade = "C";
-                gradePoint = 5;
-            } else {
-                letterGrade = "F";
-                gradePoint = 0;
-            }
-
-            int credits = course.getCredits();
+            var credits = course.getCredits();
             totalWeightedGradePoints = totalWeightedGradePoints.add(
                     java.math.BigDecimal.valueOf(gradePoint).multiply(java.math.BigDecimal.valueOf(credits))
             );
@@ -131,7 +128,7 @@ public class GpaServiceImpl implements GpaService {
                     .build());
         }
 
-        double finalGpa = 0.0;
+        var finalGpa = 0.0;
         if (totalCredits > 0) {
             finalGpa = totalWeightedGradePoints.divide(java.math.BigDecimal.valueOf(totalCredits), 2, java.math.RoundingMode.HALF_UP).doubleValue();
         }

@@ -51,14 +51,14 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     @Transactional
     public AssignmentResponse createAssignment(Long facultyUserId, AssignmentRequest request) {
-        Course course = courseRepository.findById(request.getCourseId())
+        var course = courseRepository.findById(request.getCourseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found for ID: " + request.getCourseId()));
 
         if (course.getFaculty() == null || !course.getFaculty().getId().equals(facultyUserId)) {
             throw new UnauthorizedException("Faculty is not authorized to create assignments for this course");
         }
 
-        Assignment assignment = Assignment.builder()
+        var assignment = Assignment.builder()
                 .course(course)
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -66,7 +66,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .maxMarks(request.getMaxMarks())
                 .build();
 
-        Assignment saved = assignmentRepository.save(assignment);
+        var saved = assignmentRepository.save(assignment);
         return mapToAssignmentResponse(saved);
     }
 
@@ -78,20 +78,20 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
         return assignmentRepository.findByCourseId(courseId).stream()
                 .map(this::mapToAssignmentResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     @Transactional
     public SubmissionResponse submitAssignment(Long studentUserId, Long assignmentId, MultipartFile file, String ipAddress, Integer completionTimeSeconds) {
-        StudentProfile student = studentProfileRepository.findById(studentUserId)
+        var student = studentProfileRepository.findById(studentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for user ID: " + studentUserId));
 
-        Assignment assignment = assignmentRepository.findById(assignmentId)
+        var assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment not found for ID: " + assignmentId));
 
         // Validate student enrollment
-        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(studentUserId, assignment.getCourse().getId())
+        var enrollment = enrollmentRepository.findByStudentIdAndCourseId(studentUserId, assignment.getCourse().getId())
                 .orElseThrow(() -> new BadRequestException("Student is not enrolled in the course for this assignment"));
 
         if (enrollment.getStatus() != EnrollmentStatus.ACTIVE) {
@@ -99,9 +99,9 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         // Upload and store the file
-        String uniqueFileName = fileStorageService.storeFile(file);
+        var uniqueFileName = fileStorageService.storeFile(file);
 
-        Optional<AssignmentSubmission> existingOpt = submissionRepository.findByAssignmentIdAndStudentId(assignmentId, studentUserId);
+        var existingOpt = submissionRepository.findByAssignmentIdAndStudentId(assignmentId, studentUserId);
 
         AssignmentSubmission submission;
         if (existingOpt.isPresent()) {
@@ -122,7 +122,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         // Save submission and run the automated proctoring analysis
-        AssignmentSubmission saved = submissionRepository.save(submission);
+        var saved = submissionRepository.save(submission);
         proctoringService.analyzeSubmissionIntegrity(saved);
 
         return mapToSubmissionResponse(saved);
@@ -131,11 +131,11 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     @Transactional
     public SubmissionResponse gradeSubmission(Long facultyUserId, Long submissionId, GradeSubmissionRequest request) {
-        AssignmentSubmission submission = submissionRepository.findById(submissionId)
+        var submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Submission not found for ID: " + submissionId));
 
-        Assignment assignment = submission.getAssignment();
-        Course course = assignment.getCourse();
+        var assignment = submission.getAssignment();
+        var course = assignment.getCourse();
 
         if (course.getFaculty() == null || !course.getFaculty().getId().equals(facultyUserId)) {
             throw new UnauthorizedException("Faculty is not authorized to grade this submission");
@@ -146,10 +146,10 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         submission.setMarksObtained(request.getMarksObtained());
-        AssignmentSubmission saved = submissionRepository.save(submission);
+        var saved = submissionRepository.save(submission);
 
         // Notify student
-        String msg = String.format("Your submission for %s has been graded: %.2f / %.2f.",
+        var msg = String.format("Your submission for %s has been graded: %.2f / %.2f.",
                 assignment.getTitle(), request.getMarksObtained().doubleValue(), assignment.getMaxMarks().doubleValue());
         notificationService.createNotification(submission.getStudent().getId(), "Assignment Graded", msg);
 
@@ -159,17 +159,17 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     @Transactional(readOnly = true)
     public List<SubmissionResponse> getAssignmentSubmissions(Long facultyUserId, Long assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
+        var assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment not found for ID: " + assignmentId));
 
-        Course course = assignment.getCourse();
+        var course = assignment.getCourse();
         if (course.getFaculty() == null || !course.getFaculty().getId().equals(facultyUserId)) {
             throw new UnauthorizedException("Faculty is not authorized to view submissions for this assignment");
         }
 
         return submissionRepository.findByAssignmentId(assignmentId).stream()
                 .map(this::mapToSubmissionResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -180,7 +180,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
         return submissionRepository.findByStudentId(studentUserId).stream()
                 .map(this::mapToSubmissionResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private AssignmentResponse mapToAssignmentResponse(Assignment assignment) {

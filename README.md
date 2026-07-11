@@ -22,8 +22,9 @@ Rather than a basic CRUD application, this backend was built to showcase enterpr
 | Category | Technology |
 | --- | --- |
 | **Core Platform** | Java 21, Spring Boot 3.3.5, Maven |
-| **Persistence** | MySQL 8.0, Spring Data JPA, Hibernate, H2 (Local Default) |
-| **Caching / Sessions** | Redis 7.2 |
+| **AI Integration** | Spring AI (1.0.0-M1), OpenAI (`gpt-4o-mini`), TokenTextSplitter |
+| **Persistence** | MySQL 8.0, PostgreSQL (pgvector Store), Spring Data JPA, Hibernate, H2 (Local Default) |
+| **Caching / Sessions**| Redis 7.2 |
 | **Security** | Spring Security 6, Stateless JWT (JJWT 0.12.6), BCrypt |
 | **APIs / Docs** | OpenAPI 3, Swagger UI, Postman |
 | **Testing** | JUnit 5, Mockito, MockMvc |
@@ -83,6 +84,9 @@ APIs are organized into clear Swagger tags:
 * **Assignment**: `/api/assignments` (create assignment), `/api/assignments/{id}/submit` (supports multipart solution files under 5MB), `/api/assignments/submissions/{id}/grade` (assign grade letter).
 * **Fees**: `/api/fees/due` (issue bill to student), `/api/fees/{id}/pay` (mock visa/mastercard gateway processing).
 * **Admin**: `/api/admin/users` (CRUD), `/api/admin/courses` (CRUD), `/api/admin/dashboard` (academic counts and billing totals), `/api/admin/enrollments` (all registrations list).
+* **AI Advisor & Support**: `/api/support/chat` (resilient fluent AI assistant), `/api/support/advisor/advise` (RAG vector similarity advisor).
+* **Exam Lifecycle**: `/api/exams/form/submit` (exam form matching ledger checks), `/api/exams/admit-card/download` (dynamic PDF Admit Card stream).
+* **Payment Webhooks**: `/api/webhook/payment` (verifies Stripe/Razorpay payloads using HMAC-SHA256 headers).
 * **Notifications**: `/api/notifications` (unread alerts list, mark read).
 
 ---
@@ -154,3 +158,5 @@ First, register a user using `/api/auth/register`, or use the pre-filled dashboa
 * **Dynamic GPA Calculation**: Designed a custom calculation module using credit hour weights. Handled raw exam percentages to compute grades (O, A+, etc.) mapping to grade points, preventing double-evaluation and division-by-zero errors.
 * **Stateless Secure Logouts**: Solved JWT stateless validation limits by designing a hybrid token checker. On logout, Lettuce Redis Client locks the JWT token with a TTL set to its exact duration remaining, preserving system speed while ensuring strict session invalidation.
 * **Resilient File Handling**: Built a local file storage utility validating maximum uploads to 5MB, filtering MIME extension signatures, and separating paths for course assignment file distribution.
+* **Granular AI Client Resiliency & Logging**: Integrated Spring AI's modern `ChatClient` builder. Engineered robust error boundary mappings catching `TransientAiException` and `NonTransientAiException` (like 429 quota errors) while maintaining a clean user experience via smart operational fallbacks and tracing errors via SLF4J log lines.
+* **Double-Entry Ledger Integrity Hash Chain**: Structured an auditable double-entry transaction database log using SHA-256 integrity hash chains (linking each transaction to the previous block's hash) verified within serializable isolation boundaries to guarantee transaction ledger immutability.

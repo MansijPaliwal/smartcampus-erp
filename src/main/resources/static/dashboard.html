@@ -427,84 +427,38 @@
           </div>
         </div>
 
-        <!-- QUICK-START GUIDE -->
-        <div class="guide-box">
-          <h3 class="text-base" style="font-weight: 600; color: var(--color-brand); display: flex; align-items: center; gap: var(--space-2);">
-            <span class="material-symbols-outlined">school</span>
-            <span>SmartCampus ERP System Quick-Start Guide</span>
-          </h3>
-          <p class="text-sm text-secondary" style="margin-top: var(--space-2); line-height: 1.5;">
-            This dashboard shows university operations (H2/MySQL database, H2/Redis token caches) connected directly to our Spring Boot REST controllers. The system is populated with seeded mock records.
-          </p>
-          <div class="guide-steps">
-            <div class="guide-step">
-              <h4>🔑 Pre-Seeded Accounts</h4>
-              <p>
-                • Admin Console: admin.system@smartcampus.edu (Pass: AdminSystem@2026)<br>
-                • Student Dashboard: aarav.sharma@smartcampus.edu (Pass: AaravStudent@2026)<br>
-                • Faculty Portal: alan.turing@smartcampus.edu (Pass: AlanFaculty@2026)
-              </p>
-            </div>
-            <div class="guide-step">
-              <h4>🎓 Student GPA & Roster Scenarios</h4>
-              <p>
-                Aarav Sharma (Student) is enrolled in CS101 and CS201. His GPA is dynamically calculated as 9.0 (A+) based on mid-term scores. Enter new marks or change enrollments using the Postman Collection!
-              </p>
-            </div>
-            <div class="guide-step">
-              <h4>💳 Invoices, Uploads, and Redis Blacklists</h4>
-              <p>
-                Check pending student dues (₹1500 outstanding) or pay them. Test secure assignment PDF file uploads (&lt; 5MB) and Redis-based token blacklist logouts. Refer to Swagger or Postman.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- STATS CARD GRID -->
-        <div class="dashboard-stats">
+        <!-- 3-COLUMN DATA WIDGET LAYOUT -->
+        <div class="dashboard-stats" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: var(--space-8);">
           <div class="stat-card">
             <div class="stat-header">
-              <span class="stat-title">Total Students</span>
+              <span class="stat-title">Total Students Enrolled</span>
               <span class="material-symbols-outlined stat-icon">school</span>
             </div>
-            <div class="stat-value" id="statStudents">—</div>
-            <div class="stat-trend">
-              <span class="material-symbols-outlined" style="font-size: 14px;">trending_up</span>
-              <span>100% active</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-header">
-              <span class="stat-title">Total Faculty</span>
-              <span class="material-symbols-outlined stat-icon">person</span>
-            </div>
-            <div class="stat-value" id="statFaculty">—</div>
+            <div class="stat-value" id="widgetStudents">—</div>
             <div class="stat-trend">
               <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
-              <span>All active</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-header">
-              <span class="stat-title">Registered Courses</span>
-              <span class="material-symbols-outlined stat-icon">book</span>
-            </div>
-            <div class="stat-value" id="statCourses">—</div>
-            <div class="stat-trend">
-              <span class="material-symbols-outlined" style="font-size: 14px;">auto_stories</span>
-              <span>Active curriculum</span>
+              <span>Active enrollments</span>
             </div>
           </div>
           <div class="stat-card alert-card">
             <div class="stat-header">
-              <span class="stat-title">Pending Billing Dues</span>
+              <span class="stat-title">Total Pending Fees</span>
               <span class="material-symbols-outlined stat-icon">payments</span>
             </div>
-            <div class="stat-value" id="statPendingFees">₹0.00</div>
+            <div class="stat-value" id="widgetPendingFees">₹0.00</div>
             <div class="stat-trend">
               <span class="material-symbols-outlined" style="font-size: 14px;">error</span>
-              <span>Awaiting payment</span>
+              <span>Awaiting billing clearance</span>
             </div>
+          </div>
+          <div class="stat-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: var(--space-2);">
+            <div class="stat-header" style="margin-bottom: 0;">
+              <span class="stat-title">Recent System Alerts</span>
+              <span class="material-symbols-outlined stat-icon" style="color: var(--color-warning);">notifications</span>
+            </div>
+            <ul id="widgetAlertsList" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-xs); color: var(--color-text-secondary); text-align: left;">
+              <li>Loading alerts...</li>
+            </ul>
           </div>
         </div>
 
@@ -643,7 +597,7 @@
 
     async function fetchDashboardStats() {
       try {
-        const res = await fetch('/api/admin/dashboard', {
+        const res = await fetch('/api/admin/dashboard/stats', {
           headers: getAuthHeaders()
         });
         if (res.status === 403 || res.status === 401) {
@@ -652,12 +606,30 @@
           return;
         }
         const stats = await res.json();
-        document.getElementById('statStudents').innerText = stats.studentCount;
-        document.getElementById('statFaculty').innerText = stats.facultyCount;
-        document.getElementById('statCourses').innerText = stats.courseCount;
-        document.getElementById('statPendingFees').innerText = `₹${stats.totalPendingFees.toFixed(2)}`;
+        document.getElementById('widgetStudents').innerText = stats.totalStudents;
+        document.getElementById('widgetPendingFees').innerText = `₹${stats.totalPendingFees.toFixed(2)}`;
+
+        const alertsList = document.getElementById('widgetAlertsList');
+        if (stats.recentAlerts && stats.recentAlerts.length > 0) {
+          alertsList.innerHTML = stats.recentAlerts.map(alert => {
+            const timeStr = new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `
+              <li style="display: flex; align-items: flex-start; gap: var(--space-2); line-height: 1.4; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-1);">
+                <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-brand); margin-top: 2px;">info</span>
+                <div style="flex: 1;">
+                  <strong style="color: var(--color-text-primary); font-size: var(--text-xs);">${alert.title}</strong>
+                  <div style="font-size: 11px; color: var(--color-text-secondary);">${alert.message}</div>
+                  <span style="font-size: 9px; color: var(--color-text-disabled); display: block; margin-top: 1px;">${timeStr}</span>
+                </div>
+              </li>
+            `;
+          }).join('');
+        } else {
+          alertsList.innerHTML = `<li>No recent system alerts.</li>`;
+        }
       } catch (err) {
         console.error("Failed to load dashboard metrics", err);
+        document.getElementById('widgetAlertsList').innerHTML = `<li style="color: var(--color-danger);">Failed to load alerts.</li>`;
       }
     }
 

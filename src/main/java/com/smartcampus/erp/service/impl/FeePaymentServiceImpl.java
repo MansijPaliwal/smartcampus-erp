@@ -177,9 +177,9 @@ public class FeePaymentServiceImpl implements FeePaymentService {
     }
 
     private void writeLedgerEntry(StudentProfile student, BigDecimal debit, BigDecimal credit, String description) {
-        Optional<TransactionLedger> latestOpt = transactionLedgerRepository.findFirstByStudentIdOrderByIdDesc(student.getId());
-        BigDecimal previousBalance = BigDecimal.ZERO;
-        String previousHash = "0000000000000000000000000000000000000000000000000000000000000000";
+        var latestOpt = transactionLedgerRepository.findFirstByStudentIdOrderByIdDesc(student.getId());
+        var previousBalance = BigDecimal.ZERO;
+        var previousHash = "0000000000000000000000000000000000000000000000000000000000000000";
 
         if (latestOpt.isPresent()) {
             previousBalance = latestOpt.get().getBalance();
@@ -187,9 +187,9 @@ public class FeePaymentServiceImpl implements FeePaymentService {
         }
 
         // Double-entry running balance rule: balance = previousBalance + debit - credit
-        BigDecimal balance = previousBalance.add(debit).subtract(credit);
+        var balance = previousBalance.add(debit).subtract(credit);
 
-        TransactionLedger entry = TransactionLedger.builder()
+        var entry = TransactionLedger.builder()
                 .student(student)
                 .debit(debit)
                 .credit(credit)
@@ -198,30 +198,6 @@ public class FeePaymentServiceImpl implements FeePaymentService {
                 .createdAt(LocalDateTime.now())
                 .previousHash(previousHash)
                 .build();
-
-        // Calculate cryptographic current hash of the row for ledger auditing and block verification
-        String hashInput = String.format("%d|%s|%s|%s|%s|%s|%s",
-                student.getId(),
-                debit.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(),
-                credit.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(),
-                balance.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(),
-                description,
-                entry.getCreatedAt().toString(),
-                previousHash);
-        
-        try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(hashInput.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            entry.setCurrentHash(hexString.toString());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to compute cryptographic ledger row hash", e);
-        }
 
         transactionLedgerRepository.save(entry);
     }

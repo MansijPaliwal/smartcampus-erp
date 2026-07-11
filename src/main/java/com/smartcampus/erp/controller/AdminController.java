@@ -220,6 +220,13 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getDashboardStats());
     }
 
+    @GetMapping("/dashboard/stats")
+    @Operation(summary = "Get data-driven admin dashboard stats", description = "Retrieve total enrolled students, total pending fees, and top 3 recent system notifications.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved statistics")
+    public ResponseEntity<AdminDashboardStatsResponse> getDashboardStatsNew() {
+        return ResponseEntity.ok(adminService.getDashboardStats());
+    }
+
     @GetMapping("/enrollments")
     @Operation(summary = "Get all enrollments", description = "Retrieve list of all student course enrollments in the system.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved enrollment history")

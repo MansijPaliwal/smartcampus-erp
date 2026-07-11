@@ -22,7 +22,7 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final String bucketName;
     private final String publicUrlPrefix;
 
-    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("pdf", "zip", "png", "jpg", "jpeg");
+    private static final List<String> ALLOWED_EXTENSIONS = List.of("pdf", "zip", "png", "jpg", "jpeg");
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
     public FileStorageServiceImpl(
@@ -45,10 +45,10 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new FileStorageException("File size exceeds the maximum limit of 5MB.");
         }
 
-        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+        var originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         
         // Validate File Extension
-        String fileExtension = getFileExtension(originalFileName);
+        var fileExtension = getFileExtension(originalFileName);
         if (!ALLOWED_EXTENSIONS.contains(fileExtension.toLowerCase())) {
             throw new FileStorageException("File type not allowed. Allowed types are: " + ALLOWED_EXTENSIONS);
         }
@@ -60,10 +60,10 @@ public class FileStorageServiceImpl implements FileStorageService {
             }
 
             // Create a unique file name to avoid collision
-            String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
+            var uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
 
             // Stream to AWS S3
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            var putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(uniqueFileName)
                     .contentType(file.getContentType())

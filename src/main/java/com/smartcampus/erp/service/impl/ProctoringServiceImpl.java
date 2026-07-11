@@ -23,7 +23,7 @@ public class ProctoringServiceImpl implements ProctoringService {
             return;
         }
 
-        int score = 100;
+        var score = 100;
 
         // 1. Check for rapid completion anomaly (threshold: 30 seconds)
         if (submission.getCompletionTimeSeconds() != null && submission.getCompletionTimeSeconds() < 30) {
@@ -32,11 +32,11 @@ public class ProctoringServiceImpl implements ProctoringService {
 
         // 2. Check for IP address mismatch anomaly
         if (submission.getIpAddress() != null && submission.getStudent() != null) {
-            Long studentId = submission.getStudent().getId();
-            List<AssignmentSubmission> otherSubmissions = submissionRepository.findByStudentId(studentId);
+            var studentId = submission.getStudent().getId();
+            var otherSubmissions = submissionRepository.findByStudentId(studentId);
 
             // Filter out the current submission from comparison if it's already saved
-            List<String> priorIps = otherSubmissions.stream()
+            var priorIps = otherSubmissions.stream()
                     .filter(s -> !s.getId().equals(submission.getId()))
                     .map(AssignmentSubmission::getIpAddress)
                     .filter(ip -> ip != null && !ip.trim().isEmpty())
